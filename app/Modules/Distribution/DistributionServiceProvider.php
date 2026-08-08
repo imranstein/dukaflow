@@ -8,7 +8,9 @@ use App\Modules\Distribution\Models\Customer;
 use App\Modules\Distribution\Models\Route;
 use App\Modules\Distribution\Models\SalesRep;
 use App\Modules\Distribution\Models\VisitSchedule;
+use App\Modules\Distribution\Support\DistributionDirectory;
 use App\Policies\BackOfficePolicy;
+use App\Support\Contracts\ScopeDirectory;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -26,6 +28,13 @@ class DistributionServiceProvider extends ServiceProvider
         SalesRep::class,
         VisitSchedule::class,
     ];
+
+    public function register(): void
+    {
+        // Lets other modules name outlets and routes without depending on this
+        // one. See App\Support\Contracts\ScopeDirectory.
+        $this->app->bind(ScopeDirectory::class, DistributionDirectory::class);
+    }
 
     public function boot(): void
     {

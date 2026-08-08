@@ -7,6 +7,7 @@ namespace App\Modules\Distribution\Filament\Resources\Customers;
 use App\Modules\Distribution\Filament\Resources\Customers\Pages\CreateCustomer;
 use App\Modules\Distribution\Filament\Resources\Customers\Pages\EditCustomer;
 use App\Modules\Distribution\Filament\Resources\Customers\Pages\ListCustomers;
+use App\Modules\Distribution\Filament\Resources\Customers\RelationManagers\VisitSchedulesRelationManager;
 use App\Modules\Distribution\Filament\Resources\Customers\Schemas\CustomerForm;
 use App\Modules\Distribution\Filament\Resources\Customers\Tables\CustomersTable;
 use App\Modules\Distribution\Models\Customer;
@@ -48,7 +49,7 @@ class CustomerResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            VisitSchedulesRelationManager::class,
         ];
     }
 
