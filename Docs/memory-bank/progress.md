@@ -28,4 +28,18 @@ Append-only. One dated entry per work session: what got done, what's next.
 - Demo dataset is fixed rather than generated: 16 products, 2 price lists, 4 beats, 18 outlets, 23 visit days.
 - 100 tests green, Larastan level 6 clean, arch tests enforce the module boundary in both directions.
 
+## 2026-08-08 — review pass over Phases 0 and 1
+
+Put the finished code through an adversarial review before moving on. What it found, and what it changed:
+
+- **Two price lists starting on the same day tied exactly**, and the winner was then whichever row came back first. Real, and invisible: both answers look plausible. The comparator breaks the tie on id now.
+- **`Money::format()` went through a float**, so on large amounts it disagreed with `toDecimal()` — two accessors on the same object reporting different money. It groups digits as a string now. `fromDecimal()` also saturated at `PHP_INT_MAX` instead of refusing an amount it cannot hold.
+- **`scopeScheduledOn` promised a round in visit order and returned row order.** The `sequence` column was written everywhere and read nowhere, so a rep would have been sent back and forth across the city with nothing looking wrong.
+- **Five places where a duplicate hit the unique index instead of a validation rule**, surfacing as a raw `QueryException` rather than a message on the field.
+- **The arch rules could not see migrations at all** — anonymous classes outside the PSR-4 map — so the boundary was unenforced on the first thing ADR-001 says a module owns.
+- **`ProductFactory` never set a unit of measure**, so no test had ever exercised the relation or the column that renders it.
+- Every ADR link pointed at a lowercase `docs/`, which cannot coexist with `Docs/` on macOS or Windows. The two had silently merged, so the links worked locally and were broken on GitHub.
+
+162 tests now, up from 100. The ones worth having are the ones that would have caught the above: same-day ties, scope against scope_id, round ordering, large-amount formatting, and the demo seed itself.
+
 **Next**: Phase 2, orders and inventory.
