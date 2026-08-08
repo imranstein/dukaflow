@@ -32,6 +32,10 @@ class ItemsRelationManager extends RelationManager
 
     protected static ?string $modelLabel = 'price';
 
+    // These tables hold a handful of rows each, so the extra round trip that
+    // lazy loading costs buys nothing, and the panel renders in one pass.
+    protected static bool $isLazy = false;
+
     public function form(Schema $schema): Schema
     {
         return $schema->components([
