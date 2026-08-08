@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Distribution\Models;
 
 use App\Modules\Distribution\Database\Factories\RouteFactory;
-use App\Modules\Distribution\Support\DistributionDirectory;
 use App\Support\Events\ScopeRecordDeleted;
+use App\Support\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -62,7 +62,7 @@ class Route extends Model
     protected static function booted(): void
     {
         static::deleted(function (self $record): void {
-            Event::dispatch(new ScopeRecordDeleted(DistributionDirectory::ROUTE, $record->id));
+            Event::dispatch(new ScopeRecordDeleted(Scope::Route->value, $record->id));
         });
     }
 

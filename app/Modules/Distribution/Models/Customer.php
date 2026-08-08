@@ -7,8 +7,8 @@ namespace App\Modules\Distribution\Models;
 use App\Modules\Distribution\Database\Factories\CustomerFactory;
 use App\Modules\Distribution\Enums\DayOfWeek;
 use App\Modules\Distribution\Enums\OutletType;
-use App\Modules\Distribution\Support\DistributionDirectory;
 use App\Support\Events\ScopeRecordDeleted;
+use App\Support\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -112,7 +112,7 @@ class Customer extends Model
     protected static function booted(): void
     {
         static::deleted(function (self $record): void {
-            Event::dispatch(new ScopeRecordDeleted(DistributionDirectory::CUSTOMER, $record->id));
+            Event::dispatch(new ScopeRecordDeleted(Scope::Customer->value, $record->id));
         });
     }
 

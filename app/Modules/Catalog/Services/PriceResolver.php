@@ -7,6 +7,7 @@ namespace App\Modules\Catalog\Services;
 use App\Modules\Catalog\Enums\PriceListScope;
 use App\Modules\Catalog\Models\PriceList;
 use App\Modules\Catalog\Models\PriceListAssignment;
+use App\Support\Contracts\Pricebook;
 use App\Support\Money;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -25,7 +26,7 @@ use Illuminate\Support\Collection;
  * list rather than editing the old one. Two lists that also start on the same
  * day are settled by taking the one created later.
  */
-final class PriceResolver
+final class PriceResolver implements Pricebook
 {
     /** Default lists are considered only after customer and route assignments. */
     private const int DEFAULT_PRECEDENCE = 30;
@@ -68,6 +69,19 @@ final class PriceResolver
         }
 
         return null;
+    }
+
+    /**
+     * The contract speaks in ids so that a caller outside this module never
+     * handles a PriceList.
+     */
+    public function priceListIdFor(
+        int $productId,
+        ?int $customerId = null,
+        ?int $routeId = null,
+        ?Carbon $on = null,
+    ): ?int {
+        return $this->priceListFor($productId, $customerId, $routeId, $on)?->id;
     }
 
     /**

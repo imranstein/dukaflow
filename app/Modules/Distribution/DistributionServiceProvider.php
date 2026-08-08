@@ -10,7 +10,7 @@ use App\Modules\Distribution\Models\SalesRep;
 use App\Modules\Distribution\Models\VisitSchedule;
 use App\Modules\Distribution\Support\DistributionDirectory;
 use App\Policies\BackOfficePolicy;
-use App\Support\Contracts\ScopeDirectory;
+use App\Support\CompositeScopeDirectory;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -29,15 +29,12 @@ class DistributionServiceProvider extends ServiceProvider
         VisitSchedule::class,
     ];
 
-    public function register(): void
-    {
-        // Lets other modules name outlets and routes without depending on this
-        // one. See App\Support\Contracts\ScopeDirectory.
-        $this->app->bind(ScopeDirectory::class, DistributionDirectory::class);
-    }
-
     public function boot(): void
     {
+        // Lets other modules name outlets, routes and reps without depending
+        // on this one. See App\Support\Contracts\ScopeDirectory.
+        $this->app->make(CompositeScopeDirectory::class)->register(new DistributionDirectory);
+
         $this->loadMigrationsFrom(__DIR__.'/Database/Migrations');
 
         foreach (self::MODELS as $model) {

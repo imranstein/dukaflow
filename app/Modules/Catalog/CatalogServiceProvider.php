@@ -10,7 +10,11 @@ use App\Modules\Catalog\Models\PriceListAssignment;
 use App\Modules\Catalog\Models\PriceListItem;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\UnitOfMeasure;
+use App\Modules\Catalog\Services\PriceResolver;
+use App\Modules\Catalog\Support\CatalogDirectory;
 use App\Policies\BackOfficePolicy;
+use App\Support\CompositeScopeDirectory;
+use App\Support\Contracts\Pricebook;
 use App\Support\Events\ScopeRecordDeleted;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -32,8 +36,17 @@ class CatalogServiceProvider extends ServiceProvider
         PriceListAssignment::class,
     ];
 
+    public function register(): void
+    {
+        // Orders prices its lines through this contract rather than by
+        // reaching for Catalog's resolver directly.
+        $this->app->bind(Pricebook::class, PriceResolver::class);
+    }
+
     public function boot(): void
     {
+        $this->app->make(CompositeScopeDirectory::class)->register(new CatalogDirectory);
+
         $this->loadMigrationsFrom(__DIR__.'/Database/Migrations');
 
         foreach (self::MODELS as $model) {
