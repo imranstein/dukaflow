@@ -33,7 +33,12 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
-            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
+            // Each module owns its Filament resources, so the panel is told
+            // where to look once per module. See docs/adr/0001-module-boundaries.md.
+            ->discoverResources(
+                in: app_path('Modules/Catalog/Filament/Resources'),
+                for: 'App\Modules\Catalog\Filament\Resources',
+            )
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
                 Dashboard::class,
