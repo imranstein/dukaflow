@@ -54,11 +54,11 @@ Most tools in this space assume perfect connectivity, and small distributors can
 
 ## How it's put together
 
-A modular monolith. Each domain area lives under `app/Modules/` and owns its own migrations, models, Filament resources and policies; none of them import another module's models, and a Pest architecture test keeps it that way. The reasoning is in [docs/adr/0001-module-boundaries.md](docs/adr/0001-module-boundaries.md).
+A modular monolith. Each domain area lives under `app/Modules/` and owns its own migrations, models, Filament resources and policies; none of them import another module's models, and a Pest architecture test keeps it that way. The reasoning is in [Docs/adr/0001-module-boundaries.md](Docs/adr/0001-module-boundaries.md).
 
 Where modules genuinely need each other, they go through an interface in the shared kernel that speaks only in primitives. Attaching a price list to an outlet is the worked example: Catalog needs to list Distribution's outlets by name and is not allowed to read its models, so Distribution implements `ScopeDirectory` and Catalog depends on the interface.
 
-Money is never a float. Prices are integer minor units inside a `Money` value object, for the reasons in [docs/adr/0004-money-handling.md](docs/adr/0004-money-handling.md).
+Money is never a float. Prices are integer minor units inside a `Money` value object, for the reasons in [Docs/adr/0004-money-handling.md](Docs/adr/0004-money-handling.md).
 
 Stack: Laravel 13, Livewire 4, Filament 5, Tailwind, Alpine. Pest for tests, Larastan at level 6 and Pint for formatting, all three gating CI. MySQL is the production target, SQLite is the default for local work and in-memory SQLite runs the test suite.
 

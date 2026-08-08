@@ -22,7 +22,7 @@ use Filament\Tables\Table;
  * The prices on a list.
  *
  * Everything here converts between the decimal a person types and the minor
- * units the column stores. See docs/adr/0004-money-handling.md.
+ * units the column stores. See Docs/adr/0004-money-handling.md.
  */
 class ItemsRelationManager extends RelationManager
 {

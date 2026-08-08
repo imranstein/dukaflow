@@ -42,7 +42,7 @@ class CatalogServiceProvider extends ServiceProvider
 
         // Price list assignments point at customers and routes without a
         // foreign key, so this stands in for the cascade the database cannot
-        // give us. See docs/adr/0001-module-boundaries.md.
+        // give us. See Docs/adr/0001-module-boundaries.md.
         Event::listen(ScopeRecordDeleted::class, PurgeAssignmentsForDeletedScope::class);
     }
 }

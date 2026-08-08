@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Distribution\Filament\Resources\Routes\Schemas;
 
+use App\Modules\Distribution\Models\Route;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -16,7 +17,10 @@ class RouteForm
         return $schema
             ->components([
                 TextInput::make('code')
-                    ->required(),
+                    ->required()
+                    ->maxLength(32)
+                    ->unique(Route::class, ignoreRecord: true)
+                    ->dehydrateStateUsing(fn (string $state): string => mb_strtoupper(trim($state))),
                 TextInput::make('name')
                     ->required(),
                 TextInput::make('description'),

@@ -17,6 +17,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Validation\Rules\Unique;
 
 /**
  * Who a price list applies to.
@@ -63,6 +64,16 @@ class AssignmentsRelationManager extends RelationManager
                 ->options(fn (Get $get): array => $this->directory()->options((string) $get('scope')))
                 ->searchable()
                 ->required()
+                // The table enforces one assignment per list per target. Say
+                // so here, or the second attempt surfaces as a raw database
+                // exception rather than a message on the field.
+                ->unique(
+                    ignoreRecord: true,
+                    modifyRuleUsing: fn (Unique $rule, Get $get): Unique => $rule
+                        ->where('price_list_id', $this->getOwnerRecord()->getKey())
+                        ->where('scope', (string) $get('scope')),
+                )
+                ->validationMessages(['unique' => 'This list is already attached to that one.'])
                 ->helperText(fn (Get $get): ?string => $this->directory()->handles((string) $get('scope'))
                     ? null
                     : 'Nothing to attach to yet.'),

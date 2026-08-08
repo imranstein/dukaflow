@@ -45,7 +45,7 @@ Deliberately not building these, even when they seem adjacent:
 
 ## 4. Architecture
 
-Modular monolith. Modules live under `app/Modules/` or `src/Modules/`; decide in ADR-001 and stick to it.
+Modular monolith. Modules live under `app/Modules/`, settled in [ADR-001](adr/0001-module-boundaries.md).
 
 - Catalog: products, units of measure, price lists, price list assignments.
 - Distribution: distributor org settings, sales reps, customers (outlets), routes/beats, visit schedules.
@@ -56,9 +56,9 @@ Modular monolith. Modules live under `app/Modules/` or `src/Modules/`; decide in
 Rules:
 
 - Modules talk to each other through explicit service interfaces or domain events. They never reach into another module's Eloquent models directly.
-- Each module owns its migrations, models, Filament resources, Livewire components, policies, and tests.
+- Each module owns its migrations, models, Filament resources and Livewire components. Policies are shared while the access rules are identical across resources, and tests live under `tests/` in a directory per module; ADR-001 explains both.
 - The shared kernel stays minimal: base classes, a money value object, ULID/UUID helpers.
-- Every decision that took real thought gets an ADR in `docs/adr/`. Minimum required: ADR-001 module boundaries, ADR-002 offline sync strategy, ADR-003 ID strategy (client-generated UUIDs/ULIDs), ADR-004 money handling.
+- Every decision that took real thought gets an ADR in `Docs/adr/`. Minimum required: ADR-001 module boundaries, ADR-002 offline sync strategy, ADR-003 ID strategy (client-generated UUIDs/ULIDs), ADR-004 money handling.
 
 ## 5. Offline sync design
 

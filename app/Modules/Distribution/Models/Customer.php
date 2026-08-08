@@ -82,13 +82,27 @@ class Customer extends Model
      * Outlets due to be called on for a given day, in the order the rep walks
      * them. This is what the PWA asks for when it builds today's round.
      *
+     * The ordering is the point: a round served in an arbitrary order sends
+     * the rep back and forth across the city. It comes from the sequence on
+     * that day's schedule row, so the join is what produces it.
+     *
      * @param  Builder<Customer>  $query
      */
     public function scopeScheduledOn(Builder $query, DayOfWeek $day): void
     {
-        $query->whereHas('visitSchedules', function (Builder $schedules) use ($day): void {
-            $schedules->where('day_of_week', $day->value)->where('is_active', true);
-        });
+        $query
+            ->whereHas('visitSchedules', function (Builder $schedules) use ($day): void {
+                $schedules->where('day_of_week', $day->value)->where('is_active', true);
+            })
+            ->orderBy(
+                VisitSchedule::query()
+                    ->select('sequence')
+                    ->whereColumn('visit_schedules.customer_id', 'customers.id')
+                    ->where('day_of_week', $day->value)
+                    ->where('is_active', true)
+                    ->limit(1)
+            )
+            ->orderBy('customers.id');
     }
 
     /**

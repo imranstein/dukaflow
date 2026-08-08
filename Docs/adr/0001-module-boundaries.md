@@ -22,11 +22,15 @@ app/Modules/Catalog/
 │   ├── Factories/
 │   ├── Migrations/
 │   └── Seeders/
+├── Enums/
 ├── Filament/
 │   └── Resources/
+├── Listeners/
 ├── Models/
-└── Policies/
+└── Services/
 ```
+
+Two things are deliberately not in there. **Policies** are shared: the access rules are the same for every back-office record, so one `App\Policies\BackOfficePolicy` is registered against every model rather than a near-identical class per module. A module that grows rules of its own can add a `Policies/` directory then. **Tests** live under `tests/`, in a subdirectory per module, so that one Pest run covers everything and the suites can be filtered the usual way.
 
 Three pieces of wiring make that work, because Laravel does not discover any of it by default:
 

@@ -30,7 +30,33 @@ it('rejects amounts it cannot represent exactly', function (string $input) {
     'empty' => [''],
     'comma separator' => ['1,250.00'],
     'currency prefix' => ['ETB 12.50'],
+    // Casting these would saturate at PHP_INT_MAX and quietly return a
+    // different, smaller amount than the caller asked for.
+    'past the integer range' => ['92233720368547758.08'],
+    'far past it' => ['999999999999999999999.99'],
 ])->throws(InvalidArgumentException::class);
+
+it('accepts the largest amount it can hold', function () {
+    expect(Money::fromDecimal('92233720368547758.07')->minorUnits)->toBe(PHP_INT_MAX);
+});
+
+it('formats large amounts without losing santim to a float', function () {
+    $money = Money::ofMinor(123456789012345678);
+
+    expect($money->toDecimal())->toBe('1234567890123456.78')
+        ->and($money->format())->toBe('ETB 1,234,567,890,123,456.78');
+});
+
+it('groups thousands', function (int $minor, string $formatted) {
+    expect(Money::ofMinor($minor)->format())->toBe($formatted);
+})->with([
+    'sub-unit' => [7, 'ETB 0.07'],
+    'units' => [1250, 'ETB 12.50'],
+    'thousands' => [123450, 'ETB 1,234.50'],
+    'millions' => [123456789, 'ETB 1,234,567.89'],
+    'negative' => [-123450, 'ETB -1,234.50'],
+    'zero' => [0, 'ETB 0.00'],
+]);
 
 it('survives the arithmetic that breaks floats', function () {
     $tenCents = Money::fromDecimal('0.10');

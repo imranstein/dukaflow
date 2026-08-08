@@ -19,7 +19,7 @@ return new class extends Migration
             // There is deliberately no foreign key here. Customers and routes
             // belong to the Distribution module, and Catalog does not depend
             // on Distribution in either direction — see
-            // docs/adr/0001-module-boundaries.md. The cost of that boundary is
+            // Docs/adr/0001-module-boundaries.md. The cost of that boundary is
             // that the database cannot enforce this reference, so Distribution
             // raises a domain event when a customer or route is deleted and
             // Catalog cleans up its own assignments.

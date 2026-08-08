@@ -16,13 +16,14 @@ use Illuminate\Support\Collection;
  *
  * This is the public face of Catalog's pricing. Other modules ask it questions
  * using plain identifiers and get a Money back; they never touch price list
- * models directly. See docs/adr/0001-module-boundaries.md.
+ * models directly. See Docs/adr/0001-module-boundaries.md.
  *
  * Several price lists can apply to the same customer at once — one attached to
  * them specifically, one to their route, and the house default. The narrowest
  * assignment wins. Where two lists sit at the same level, the one that came
  * into force most recently wins, so re-pricing is a matter of opening a newer
- * list rather than editing the old one.
+ * list rather than editing the old one. Two lists that also start on the same
+ * day are settled by taking the one created later.
  */
 final class PriceResolver
 {
@@ -93,9 +94,13 @@ final class PriceResolver
             $ranked[] = ['precedence' => self::DEFAULT_PRECEDENCE, 'list' => $list];
         }
 
+        // Narrowest scope first, then whichever came into force most recently.
+        // The id breaks a same-day tie: without it the comparator returns 0,
+        // and the winner would be decided by whatever order the rows happened
+        // to come back in — which is to say, not decided at all.
         usort($ranked, function (array $a, array $b): int {
-            return [$a['precedence'], $b['list']->effective_from->getTimestamp()]
-                <=> [$b['precedence'], $a['list']->effective_from->getTimestamp()];
+            return [$a['precedence'], $b['list']->effective_from->getTimestamp(), $b['list']->id]
+                <=> [$b['precedence'], $a['list']->effective_from->getTimestamp(), $a['list']->id];
         });
 
         return collect($ranked)

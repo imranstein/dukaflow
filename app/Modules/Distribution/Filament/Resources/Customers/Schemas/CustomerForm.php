@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Distribution\Filament\Resources\Customers\Schemas;
 
 use App\Modules\Distribution\Enums\OutletType;
+use App\Modules\Distribution\Models\Customer;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -17,7 +18,10 @@ class CustomerForm
         return $schema
             ->components([
                 TextInput::make('code')
-                    ->required(),
+                    ->required()
+                    ->maxLength(32)
+                    ->unique(Customer::class, ignoreRecord: true)
+                    ->dehydrateStateUsing(fn (string $state): string => mb_strtoupper(trim($state))),
                 TextInput::make('name')
                     ->required(),
                 Select::make('outlet_type')
@@ -28,9 +32,14 @@ class CustomerForm
                     ->tel(),
                 TextInput::make('address'),
                 TextInput::make('latitude')
-                    ->numeric(),
+                    ->numeric()
+                    ->minValue(-90)
+                    ->maxValue(90)
+                    ->helperText('Captured on the handset when the outlet is registered.'),
                 TextInput::make('longitude')
-                    ->numeric(),
+                    ->numeric()
+                    ->minValue(-180)
+                    ->maxValue(180),
                 Select::make('route_id')
                     ->relationship('route', 'name'),
                 Toggle::make('is_active')

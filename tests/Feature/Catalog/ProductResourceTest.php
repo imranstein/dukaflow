@@ -13,7 +13,7 @@ use function Pest\Laravel\get;
 
 /*
  * This is the walking skeleton for the module conventions described in
- * docs/adr/0001-module-boundaries.md. Between them these tests prove that a
+ * Docs/adr/0001-module-boundaries.md. Between them these tests prove that a
  * module's migration, factory and Filament resource are all discovered, none
  * of which Laravel or Filament does by default for code outside app/Models
  * and app/Filament.

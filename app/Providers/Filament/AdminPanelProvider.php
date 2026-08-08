@@ -35,7 +35,7 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Amber,
             ])
             // Each module owns its Filament resources, so the panel is told
-            // where to look once per module. See docs/adr/0001-module-boundaries.md.
+            // where to look once per module. See Docs/adr/0001-module-boundaries.md.
             ->discoverResources(
                 in: app_path('Modules/Catalog/Filament/Resources'),
                 for: 'App\Modules\Catalog\Filament\Resources',

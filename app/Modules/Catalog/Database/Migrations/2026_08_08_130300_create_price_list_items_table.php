@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
 
             // Minor units of the parent list's currency. See
-            // docs/adr/0004-money-handling.md for why this is not a decimal.
+            // Docs/adr/0004-money-handling.md for why this is not a decimal.
             $table->unsignedBigInteger('unit_price_minor');
 
             $table->timestamps();

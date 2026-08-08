@@ -17,7 +17,7 @@ use Illuminate\Support\Carbon;
  *
  * `scope_id` intentionally has no foreign key: it points at a Distribution
  * table, and the modules do not depend on each other. See
- * docs/adr/0001-module-boundaries.md.
+ * Docs/adr/0001-module-boundaries.md.
  *
  * @property int $id
  * @property int $price_list_id

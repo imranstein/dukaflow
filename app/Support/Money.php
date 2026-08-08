@@ -13,7 +13,7 @@ use Stringable;
  *
  * Prices are never stored or calculated as floats. 0.1 + 0.2 is not 0.3 in
  * binary floating point, and a distributor reconciling a day of van sales
- * will find that out. See docs/adr/0004-money-handling.md.
+ * will find that out. See Docs/adr/0004-money-handling.md.
  */
 final readonly class Money implements JsonSerializable, Stringable
 {
@@ -62,7 +62,17 @@ final readonly class Money implements JsonSerializable, Stringable
         [, $sign, $whole] = $matches;
         $fraction = str_pad($matches[3] ?? '', self::SUBUNIT_DIGITS, '0');
 
-        $minorUnits = (int) ($whole.$fraction);
+        $digits = ltrim($whole.$fraction, '0');
+        $digits = $digits === '' ? '0' : $digits;
+
+        // Casting a string too large for an int saturates at PHP_INT_MAX
+        // rather than failing, which would quietly turn an absurd price into
+        // a merely enormous one. Reject it instead.
+        if (strlen($digits) > 19 || (strlen($digits) === 19 && strcmp($digits, (string) PHP_INT_MAX) > 0)) {
+            throw new InvalidArgumentException("[{$amount}] is larger than this application can represent.");
+        }
+
+        $minorUnits = (int) $digits;
 
         return new self($sign === '-' ? -$minorUnits : $minorUnits, self::normaliseCurrency($currency));
     }
@@ -119,12 +129,21 @@ final readonly class Money implements JsonSerializable, Stringable
         return "{$sign}{$whole}.{$fraction}";
     }
 
+    /**
+     * Groups the thousands by hand rather than through number_format, which
+     * takes a float and would disagree with toDecimal() on any amount past
+     * the range a double represents exactly.
+     */
     public function format(): string
     {
-        return $this->currency.' '.number_format(
-            (float) $this->toDecimal(),
-            self::SUBUNIT_DIGITS,
-        );
+        $decimal = $this->toDecimal();
+        $isNegative = str_starts_with($decimal, '-');
+
+        [$whole, $fraction] = explode('.', ltrim($decimal, '-'));
+
+        $grouped = strrev(implode(',', str_split(strrev($whole), 3)));
+
+        return $this->currency.' '.($isNegative ? '-' : '').$grouped.'.'.$fraction;
     }
 
     /** @return array{minorUnits: int, currency: string} */

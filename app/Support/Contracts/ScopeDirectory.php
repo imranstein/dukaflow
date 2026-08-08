@@ -14,7 +14,7 @@ namespace App\Support\Contracts;
  * So this sits in the shared kernel and speaks only in primitives: Catalog
  * depends on the interface, Distribution provides the implementation, and
  * neither one imports the other. It is the "explicit service interface" that
- * docs/adr/0001-module-boundaries.md requires modules to talk through.
+ * Docs/adr/0001-module-boundaries.md requires modules to talk through.
  */
 interface ScopeDirectory
 {

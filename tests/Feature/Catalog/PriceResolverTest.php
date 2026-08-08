@@ -141,6 +141,64 @@ it('takes the most recently effective list when two apply equally', function () 
     expect(resolver()->priceFor($product->id, customerId: 42)?->toDecimal())->toBe('27.00');
 });
 
+it('does not confuse a route assignment for a customer one', function () {
+    $product = Product::factory()->create();
+    listPricing($product, '25.00', ['is_default' => true]);
+
+    // Same id, different kind of thing. Dropping the scope filter from the
+    // lookup would make this outlet inherit the route's pricing.
+    $routeList = listPricing($product, '9.00');
+    PriceListAssignment::factory()->forRoute(7)->create(['price_list_id' => $routeList->id]);
+
+    expect(resolver()->priceFor($product->id, customerId: 7)?->toDecimal())->toBe('25.00')
+        ->and(resolver()->priceFor($product->id, routeId: 7)?->toDecimal())->toBe('9.00');
+});
+
+it('does not confuse a customer assignment for a route one', function () {
+    $product = Product::factory()->create();
+    listPricing($product, '25.00', ['is_default' => true]);
+
+    $customerList = listPricing($product, '11.00');
+    PriceListAssignment::factory()->forCustomer(3)->create(['price_list_id' => $customerList->id]);
+
+    expect(resolver()->priceFor($product->id, routeId: 3)?->toDecimal())->toBe('25.00')
+        ->and(resolver()->priceFor($product->id, customerId: 3)?->toDecimal())->toBe('11.00');
+});
+
+it('settles a same-day tie by taking the list created later', function () {
+    $product = Product::factory()->create();
+    $sameDay = Carbon::today()->subMonth();
+
+    $first = listPricing($product, '30.00', ['effective_from' => $sameDay]);
+    $second = listPricing($product, '27.00', ['effective_from' => $sameDay]);
+
+    PriceListAssignment::factory()->forCustomer(42)->create(['price_list_id' => $first->id]);
+    PriceListAssignment::factory()->forCustomer(42)->create(['price_list_id' => $second->id]);
+
+    // Both sit at the same precedence and start on the same day. Without an
+    // explicit tie-break the winner would be whichever row the database
+    // happened to return first, which is to say undefined.
+    expect(resolver()->priceFor($product->id, customerId: 42)?->toDecimal())->toBe('27.00');
+});
+
+it('resolves the same price every time when lists tie', function () {
+    $product = Product::factory()->create();
+    $sameDay = Carbon::today()->subMonth();
+
+    foreach (['30.00', '27.00', '28.50'] as $price) {
+        $list = listPricing($product, $price, ['effective_from' => $sameDay]);
+        PriceListAssignment::factory()->forCustomer(42)->create(['price_list_id' => $list->id]);
+    }
+
+    $answers = collect(range(1, 5))
+        ->map(fn (): ?string => resolver()->priceFor($product->id, customerId: 42)?->toDecimal())
+        ->unique()
+        ->values()
+        ->all();
+
+    expect($answers)->toBe(['28.50']);
+});
+
 it('returns nothing when no list prices the product', function () {
     $product = Product::factory()->create();
     $unpriced = Product::factory()->create();
