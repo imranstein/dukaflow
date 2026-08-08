@@ -1,0 +1,21 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Distribution\Filament\Resources\Routes\Pages;
+
+use App\Modules\Distribution\Filament\Resources\Routes\RouteResource;
+use Filament\Actions\CreateAction;
+use Filament\Resources\Pages\ListRecords;
+
+class ListRoutes extends ListRecords
+{
+    protected static string $resource = RouteResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            CreateAction::make(),
+        ];
+    }
+}
