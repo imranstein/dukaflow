@@ -29,6 +29,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->brandName('DukaFlow')
             ->login()
             ->colors([
                 'primary' => Color::Amber,
