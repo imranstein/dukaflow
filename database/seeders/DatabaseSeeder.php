@@ -14,6 +14,7 @@ use App\Modules\Distribution\Database\Seeders\DistributionSeeder;
 use App\Modules\Distribution\Enums\OutletType;
 use App\Modules\Distribution\Models\Customer;
 use App\Modules\Distribution\Models\SalesRep;
+use App\Modules\Inventory\Database\Seeders\InventorySeeder;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -52,10 +53,15 @@ class DatabaseSeeder extends Seeder
         $this->call([
             CatalogSeeder::class,
             DistributionSeeder::class,
+            InventorySeeder::class,
         ]);
 
         $this->giveWholesalersTheirPricing();
         $this->linkRepLogin();
+
+        // Trading data needs the catalogue, the reps and the warehouses to
+        // exist first, so it goes last.
+        $this->call(TradingDemoSeeder::class);
     }
 
     /**
