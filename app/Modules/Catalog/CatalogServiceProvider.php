@@ -12,9 +12,11 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\UnitOfMeasure;
 use App\Modules\Catalog\Services\PriceResolver;
 use App\Modules\Catalog\Support\CatalogDirectory;
+use App\Modules\Catalog\Support\CatalogProducts;
 use App\Policies\BackOfficePolicy;
 use App\Support\CompositeScopeDirectory;
 use App\Support\Contracts\Pricebook;
+use App\Support\Contracts\ProductCatalogue;
 use App\Support\Events\ScopeRecordDeleted;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -41,6 +43,7 @@ class CatalogServiceProvider extends ServiceProvider
         // Orders prices its lines through this contract rather than by
         // reaching for Catalog's resolver directly.
         $this->app->bind(Pricebook::class, PriceResolver::class);
+        $this->app->bind(ProductCatalogue::class, CatalogProducts::class);
     }
 
     public function boot(): void

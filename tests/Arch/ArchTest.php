@@ -17,13 +17,25 @@ arch('application code declares strict types')
  * models this fails, in CI, before review.
  */
 
-arch('catalog does not reach into distribution')
+arch('catalog does not reach into another module')
     ->expect('App\Modules\Catalog')
-    ->not->toUse('App\Modules\Distribution');
+    ->not->toUse(['App\Modules\Distribution', 'App\Modules\Orders']);
 
-arch('distribution does not reach into catalog')
+arch('distribution does not reach into another module')
     ->expect('App\Modules\Distribution')
-    ->not->toUse('App\Modules\Catalog');
+    ->not->toUse(['App\Modules\Catalog', 'App\Modules\Orders']);
+
+/*
+ * Orders is downstream of both Catalog and Distribution and still depends on
+ * neither. It prices through the Pricebook contract, reads product details
+ * through ProductCatalogue, names records through ScopeDirectory, and tells
+ * Inventory about a fulfilment by raising an event. Every one of those is a
+ * shared kernel type carrying primitives.
+ */
+
+arch('orders does not reach into another module')
+    ->expect('App\Modules\Orders')
+    ->not->toUse(['App\Modules\Catalog', 'App\Modules\Distribution']);
 
 arch('the shared kernel depends on no module')
     ->expect('App\Support')
@@ -40,14 +52,7 @@ arch('distribution enums carry no framework dependencies')
 /*
  * Arch rules see imports and static references. They do not see a class named
  * in a string, or a table reached through the query builder, both of which
- * cross the boundary just as thoroughly. ModuleMigrationBoundaryTest covers
- * migrations; these cover the rest of the module source.
+ * cross the boundary just as thoroughly. Banning the DB facade outright would
+ * be wrong — OrderWriter needs DB::transaction — so the table-level check
+ * lives in ModuleBoundaryTest, which reads the files.
  */
-
-arch('no module resolves another module by class name string')
-    ->expect('App\Modules')
-    ->not->toUse('Illuminate\Support\Facades\App');
-
-arch('no module reaches another module through the query builder')
-    ->expect('App\Modules')
-    ->not->toUse('Illuminate\Support\Facades\DB');

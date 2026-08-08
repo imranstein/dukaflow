@@ -33,10 +33,10 @@ jobs:
           php artisan key:generate
 
       - name: Check formatting
-        run: ./vendor/bin/pint --test
+        run: composer run test:lint
 
       - name: Static analysis
-        run: ./vendor/bin/phpstan analyse --memory-limit=2G --no-progress
+        run: composer run test:types
 
   tests:
     # SQLite is what the suite runs on day to day because it is instant, but
@@ -91,4 +91,4 @@ jobs:
           DB_DATABASE: ${{ matrix.database == 'mysql' && 'dukaflow_test' || ':memory:' }}
           DB_USERNAME: root
           DB_PASSWORD: password
-        run: ./vendor/bin/pest
+        run: composer run test:suite
