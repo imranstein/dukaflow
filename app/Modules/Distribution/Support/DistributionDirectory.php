@@ -14,9 +14,9 @@ use App\Support\Contracts\ScopeDirectory;
  */
 final class DistributionDirectory implements ScopeDirectory
 {
-    private const CUSTOMER = 'customer';
+    public const CUSTOMER = 'customer';
 
-    private const ROUTE = 'route';
+    public const ROUTE = 'route';
 
     public function handles(string $scope): bool
     {

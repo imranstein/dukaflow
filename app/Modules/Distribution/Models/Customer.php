@@ -7,6 +7,8 @@ namespace App\Modules\Distribution\Models;
 use App\Modules\Distribution\Database\Factories\CustomerFactory;
 use App\Modules\Distribution\Enums\DayOfWeek;
 use App\Modules\Distribution\Enums\OutletType;
+use App\Modules\Distribution\Support\DistributionDirectory;
+use App\Support\Events\ScopeRecordDeleted;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Event;
 
 /**
  * An outlet: the shop the rep walks into.
@@ -85,6 +88,17 @@ class Customer extends Model
     {
         $query->whereHas('visitSchedules', function (Builder $schedules) use ($day): void {
             $schedules->where('day_of_week', $day->value)->where('is_active', true);
+        });
+    }
+
+    /**
+     * Other modules may hold a reference to this record by bare id, with no
+     * foreign key to clean it up. Announcing the deletion lets them.
+     */
+    protected static function booted(): void
+    {
+        static::deleted(function (self $record): void {
+            Event::dispatch(new ScopeRecordDeleted(DistributionDirectory::CUSTOMER, $record->id));
         });
     }
 

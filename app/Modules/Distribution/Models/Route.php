@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Distribution\Models;
 
 use App\Modules\Distribution\Database\Factories\RouteFactory;
+use App\Modules\Distribution\Support\DistributionDirectory;
+use App\Support\Events\ScopeRecordDeleted;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Event;
 
 /**
  * A beat: the run of outlets one rep works through.
@@ -50,6 +53,17 @@ class Route extends Model
     public function scopeActive(Builder $query): void
     {
         $query->where('is_active', true);
+    }
+
+    /**
+     * Other modules may hold a reference to this record by bare id, with no
+     * foreign key to clean it up. Announcing the deletion lets them.
+     */
+    protected static function booted(): void
+    {
+        static::deleted(function (self $record): void {
+            Event::dispatch(new ScopeRecordDeleted(DistributionDirectory::ROUTE, $record->id));
+        });
     }
 
     /** @return Factory<Route> */
