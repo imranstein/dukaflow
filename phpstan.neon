@@ -1,0 +1,16 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 6
+
+    paths:
+        - app
+        - database
+        - routes
+        - tests
+
+    # Pest's arch() DSL is resolved at runtime through __call, so PHPStan cannot
+    # model it. The arch tests are still executed by the Pest suite in CI.
+    excludePaths:
+        - tests/Arch
