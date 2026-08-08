@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 /**
@@ -130,20 +131,27 @@ class Order extends Model
     /**
      * The goods have left. Inventory hears about it through a domain event
      * and writes the stock movements; this module does not know it exists.
+     *
+     * The status change and whatever the listeners do share one transaction.
+     * A van that turns out to be short throws, and the order stays where it
+     * was — "fulfilled" with no stock movement behind it would be a lie the
+     * ledger could never explain.
      */
     public function fulfil(): self
     {
-        $this->transitionTo(OrderStatus::Fulfilled, 'fulfilled_at');
+        return DB::transaction(function (): self {
+            $this->transitionTo(OrderStatus::Fulfilled, 'fulfilled_at');
 
-        Event::dispatch(new OrderFulfilled(
-            orderId: $this->id,
-            reference: $this->reference,
-            salesRepId: $this->sales_rep_id,
-            occurredAt: $this->fulfilled_at ?? Carbon::now(),
-            quantities: $this->lines()->pluck('quantity', 'product_id')->all(),
-        ));
+            Event::dispatch(new OrderFulfilled(
+                orderId: $this->id,
+                reference: $this->reference,
+                salesRepId: $this->sales_rep_id,
+                occurredAt: $this->fulfilled_at ?? Carbon::now(),
+                quantities: $this->lines()->pluck('quantity', 'product_id')->all(),
+            ));
 
-        return $this;
+            return $this;
+        });
     }
 
     public function cancel(?string $reason = null): self
