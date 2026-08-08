@@ -68,18 +68,21 @@ class PriceList extends Model
             });
     }
 
+    /**
+     * Asks the same question as the scope, through the scope.
+     *
+     * This used to compare the dates in PHP, which is the sort of duplicate
+     * that stays correct right up until it doesn't: the two implementations
+     * disagreed on a date carrying a timezone other than the application's.
+     * Phase 3 has to decide which price list version an offline order was
+     * captured under, and one answer to that question is enough.
+     */
     public function isEffectiveOn(Carbon $date): bool
     {
-        if (! $this->is_active) {
-            return false;
-        }
-
-        if ($this->effective_from->startOfDay()->greaterThan($date->copy()->startOfDay())) {
-            return false;
-        }
-
-        return $this->effective_to === null
-            || $this->effective_to->startOfDay()->greaterThanOrEqualTo($date->copy()->startOfDay());
+        return static::query()
+            ->whereKey($this->getKey())
+            ->effectiveOn($date)
+            ->exists();
     }
 
     /** @return Factory<PriceList> */

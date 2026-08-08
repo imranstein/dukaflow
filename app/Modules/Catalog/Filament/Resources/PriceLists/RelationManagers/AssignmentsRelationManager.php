@@ -89,6 +89,10 @@ class AssignmentsRelationManager extends RelationManager
                     ->label('Kind')
                     ->badge()
                     ->formatStateUsing(fn (PriceListScope $state): string => $state->label()),
+                // One directory lookup per row. A price list is attached to a
+                // handful of things, so that is fine; batching it would mean
+                // adding a bulk method to the contract, which is the price of
+                // not being allowed to join across the boundary.
                 TextColumn::make('scope_id')
                     ->label('Name')
                     ->formatStateUsing(fn (int $state, PriceListAssignment $record): string => $this->directory()

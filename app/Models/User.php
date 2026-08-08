@@ -21,7 +21,10 @@ use Illuminate\Notifications\Notifiable;
  * @property string $email
  * @property UserRole $role
  */
-#[Fillable(['name', 'email', 'password', 'role'])]
+// role is deliberately not mass assignable: it is the only attribute
+// that decides what a user may do, and it is set by the seeder and by
+// administrators, never by a form the user fills in themselves.
+#[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {

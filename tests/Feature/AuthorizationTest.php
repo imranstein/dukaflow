@@ -77,6 +77,17 @@ it('turns anonymous visitors away from the panel', function () {
     get(ListProducts::getUrl())->assertRedirect();
 });
 
+it('will not take a role from mass assignment', function () {
+    // The role is the only attribute that decides what a user may do. If it
+    // were fillable, any future form that took user input straight into
+    // create() or update() would hand out administrator.
+    $user = new User;
+    $user->fill(['name' => 'Opportunist', 'email' => 'x@dukaflow.test', 'role' => UserRole::Admin]);
+
+    expect($user->getAttributes())->not->toHaveKey('role')
+        ->and(User::factory()->create()->fresh()->role)->toBe(UserRole::Rep);
+});
+
 it('describes each role', function () {
     expect(UserRole::Admin->label())->toBe('Administrator')
         ->and(UserRole::Rep->label())->toBe('Sales rep')

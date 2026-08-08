@@ -68,6 +68,9 @@ class ItemsRelationManager extends RelationManager
     {
         return $table
             ->recordTitleAttribute('id')
+            // Every row shows the product and its unit, so load them with the
+            // prices rather than two more queries per row.
+            ->modifyQueryUsing(fn ($query) => $query->with('product.unitOfMeasure'))
             ->columns([
                 TextColumn::make('product.sku')
                     ->label('SKU')
