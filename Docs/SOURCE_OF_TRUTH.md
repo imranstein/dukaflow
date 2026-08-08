@@ -35,7 +35,7 @@ Deliberately not building these, even when they seem adjacent:
 ## 3. Stack
 
 - Laravel (latest stable), PHP 8.3+
-- Livewire 3 + Alpine.js + Tailwind CSS
+- Livewire 4 + Alpine.js + Tailwind CSS
 - Filament (latest stable) for the back office admin
 - Blade + Livewire PWA for the rep interface (service worker, IndexedDB via a small JS layer, background sync queue)
 - MySQL primary target, PostgreSQL compatible; SQLite in-memory for tests
