@@ -10,8 +10,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  quality:
-    name: Lint, analyse, test
+  static:
+    name: Format and analyse
     runs-on: ubuntu-latest
 
     steps:
@@ -38,5 +38,57 @@ jobs:
       - name: Static analysis
         run: ./vendor/bin/phpstan analyse --memory-limit=2G --no-progress
 
+  tests:
+    # SQLite is what the suite runs on day to day because it is instant, but
+    # MySQL is the production target and enforces things SQLite does not:
+    # column lengths, decimal scale, strict mode, real transaction semantics.
+    # The stock ledger's invariants live in exactly that territory.
+    name: Tests on ${{ matrix.database }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, mysql]
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: dukaflow_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -ppassword"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, sqlite3, pdo_mysql, intl, bcmath
+          coverage: none
+
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@v4
+
+      - name: Prepare the environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
       - name: Tests
+        env:
+          DB_CONNECTION: ${{ matrix.database }}
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: ${{ matrix.database == 'mysql' && 'dukaflow_test' || ':memory:' }}
+          DB_USERNAME: root
+          DB_PASSWORD: password
         run: ./vendor/bin/pest
