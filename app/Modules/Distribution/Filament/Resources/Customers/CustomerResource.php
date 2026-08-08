@@ -27,6 +27,12 @@ class CustomerResource extends Resource
 
     protected static ?string $navigationLabel = 'Outlets';
 
+    // "Outlet" is what the trade calls the shop, and what the reps say. The
+    // model stays Customer because that is what it is to the business.
+    protected static ?string $modelLabel = 'outlet';
+
+    protected static ?string $pluralModelLabel = 'outlets';
+
     protected static ?string $recordTitleAttribute = 'name';
 
     public static function form(Schema $schema): Schema

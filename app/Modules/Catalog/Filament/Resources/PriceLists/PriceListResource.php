@@ -7,6 +7,7 @@ namespace App\Modules\Catalog\Filament\Resources\PriceLists;
 use App\Modules\Catalog\Filament\Resources\PriceLists\Pages\CreatePriceList;
 use App\Modules\Catalog\Filament\Resources\PriceLists\Pages\EditPriceList;
 use App\Modules\Catalog\Filament\Resources\PriceLists\Pages\ListPriceLists;
+use App\Modules\Catalog\Filament\Resources\PriceLists\RelationManagers\ItemsRelationManager;
 use App\Modules\Catalog\Filament\Resources\PriceLists\Schemas\PriceListForm;
 use App\Modules\Catalog\Filament\Resources\PriceLists\Tables\PriceListsTable;
 use App\Modules\Catalog\Models\PriceList;
@@ -42,7 +43,7 @@ class PriceListResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            ItemsRelationManager::class,
         ];
     }
 
