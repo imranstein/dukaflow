@@ -4,7 +4,7 @@ Order management for small FMCG distributors, built in Laravel. The interesting 
 
 ## Status
 
-Early. Phase 0 is done — the app boots, the module conventions are proven end to end by a walking-skeleton slice, and CI enforces formatting, static analysis and tests on every push. Phase 1 (catalog and distribution) is in progress. See [ROADMAP.md](ROADMAP.md).
+Phases 0 and 1 are done. The back office runs: you can set up a distributor's catalogue, price lists, outlets, routes, reps and visit schedules, all from the UI. Orders, van stock and the offline rep app are next. See [ROADMAP.md](ROADMAP.md).
 
 ## Quickstart
 
@@ -21,7 +21,13 @@ php artisan migrate --seed
 php artisan serve
 ```
 
-Then open http://localhost:8000/admin and sign in with `admin@dukaflow.test` / `password`.
+Then open http://localhost:8000/admin and sign in. The seed creates one account per role, all with the password `password`:
+
+| Email | Role | What they can do |
+|-------|------|------------------|
+| `admin@dukaflow.test` | Administrator | Everything, including deleting records |
+| `manager@dukaflow.test` | Manager | Maintain the catalogue and the field data |
+| `rep@dukaflow.test` | Sales rep | Read only; the field app is theirs |
 
 ### With Docker instead
 
@@ -49,6 +55,10 @@ Most tools in this space assume perfect connectivity, and small distributors can
 ## How it's put together
 
 A modular monolith. Each domain area lives under `app/Modules/` and owns its own migrations, models, Filament resources and policies; none of them import another module's models, and a Pest architecture test keeps it that way. The reasoning is in [docs/adr/0001-module-boundaries.md](docs/adr/0001-module-boundaries.md).
+
+Where modules genuinely need each other, they go through an interface in the shared kernel that speaks only in primitives. Attaching a price list to an outlet is the worked example: Catalog needs to list Distribution's outlets by name and is not allowed to read its models, so Distribution implements `ScopeDirectory` and Catalog depends on the interface.
+
+Money is never a float. Prices are integer minor units inside a `Money` value object, for the reasons in [docs/adr/0004-money-handling.md](docs/adr/0004-money-handling.md).
 
 Stack: Laravel 13, Livewire 4, Filament 5, Tailwind, Alpine. Pest for tests, Larastan at level 6 and Pint for formatting, all three gating CI. MySQL is the production target, SQLite is the default for local work and in-memory SQLite runs the test suite.
 

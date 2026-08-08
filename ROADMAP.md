@@ -2,7 +2,7 @@
 
 Phases run in order. Each one ends with the quality gates green and a tagged release. The detailed task list lives in [Docs/PLAN.md](Docs/PLAN.md); this file is the short public view of where the project is.
 
-## Phase 0 — Foundation
+## Phase 0 — Foundation ✅
 
 Repo skeleton, tooling, CI, and one thin vertical slice through the module conventions.
 
@@ -11,17 +11,19 @@ Repo skeleton, tooling, CI, and one thin vertical slice through the module conve
 - [x] ADR-001 on module boundaries
 - [x] Walking skeleton: a Product in the Catalog module with its own migration, factory, Filament resource and tests
 - [x] AGPL-3.0 license, README, this roadmap
-- [ ] Sail verified from a clean checkout
+- [x] Sail verified: containers up, migrate and seed run, app serves on PHP 8.3
 
-## Phase 1 — Catalog and distribution
+## Phase 1 — Catalog and distribution ✅
 
 Everything an admin needs to describe the business before an order can exist.
 
-- [ ] Products, units of measure, price lists with effective dates, price list assignment by customer and route
-- [ ] Customers (outlets) with geolocation, sales reps, routes/beats, visit schedules
-- [ ] Filament resources for all of it
-- [ ] Admin, manager and rep roles with policies
-- [ ] Demo seed data that looks like a real distributor
+- [x] Products, units of measure, price lists with effective dates, price list assignment by customer and route
+- [x] Price resolution: the narrowest list in force wins, customer over route over the house default
+- [x] Money value object and ADR-004 — integer minor units, never floats
+- [x] Outlets with geolocation, sales reps, routes/beats, visit schedules
+- [x] Filament resources for all of it, grouped by module
+- [x] Admin, manager and rep roles with a shared back-office policy
+- [x] Demo seed data: a real-looking Ethiopian FMCG catalogue, four beats, eighteen outlets
 
 ## Phase 2 — Orders and inventory
 
