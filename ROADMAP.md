@@ -25,13 +25,16 @@ Everything an admin needs to describe the business before an order can exist.
 - [x] Admin, manager and rep roles with a shared back-office policy
 - [x] Demo seed data: a real-looking Ethiopian FMCG catalogue, four beats, eighteen outlets
 
-## Phase 2 — Orders and inventory
+## Phase 2 — Orders and inventory ✅
 
-- [ ] Order capture with lines priced from the correct price list
-- [ ] Order status workflow with guarded transitions
-- [ ] Cash and credit payment records
-- [ ] Warehouses, van stock, an append-only stock ledger, end-of-day reconciliation
-- [ ] Dashboards for orders, stock position and reconciliation variances
+- [x] Order capture with lines priced from the correct price list, and the product snapshotted onto the line
+- [x] Order status workflow with guarded transitions that throw rather than returning false
+- [x] Cash and credit payment records — no gateways, by design
+- [x] Warehouses, van stock, and an append-only stock ledger where a balance cannot go negative outside an explicit adjustment
+- [x] End-of-day reconciliation that reports variances and writes the adjustments on close
+- [x] Dashboards for orders by route, stock position and outstanding counts
+- [x] ADR-005 on the order lifecycle, ADR-006 on the ledger
+- [x] CI runs the suite against MySQL as well as SQLite
 
 ## Phase 3 — Rep PWA and offline sync
 

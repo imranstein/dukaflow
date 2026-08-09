@@ -43,3 +43,28 @@ Put the finished code through an adversarial review before moving on. What it fo
 162 tests now, up from 100. The ones worth having are the ones that would have caught the above: same-day ties, scope against scope_id, round ordering, large-amount formatting, and the demo seed itself.
 
 **Next**: Phase 2, orders and inventory.
+
+## 2026-08-09 — Phase 2, orders and inventory
+
+- **Prerequisite first**: MySQL joined the CI matrix. The suite had only ever run on SQLite while the source of truth names MySQL the production target, and the ledger's invariants are transaction and constraint behaviour — exactly where the two diverge.
+- **Cross-module contracts generalised.** Phase 1 bound a single `ScopeDirectory`, which worked while only Distribution had anything to offer. Orders needs to name products *and* outlets, so it became a composite that modules register into. Pricing got the same treatment: Orders prices through a `Pricebook` contract in the shared kernel, implemented by Catalog. Four modules now, none naming another.
+- **Orders**: a guarded state machine (draft, submitted, approved, fulfilled, cancelled) that throws rather than returning false. An order line snapshots the product's sku, name and unit alongside the price, because an order is a record of an agreement rather than a view of today's catalogue. Cash and credit payments, no gateways.
+- **Inventory**: stock is not a number, it is the sum of every movement. Append-only, enforced in the model. The invariant — a balance may not go below zero outside an explicit adjustment — is checked inside a transaction with the rows locked. Reconciliation reports variances and writes the adjustments on close, each traceable back to the count.
+- Fulfilling an order runs in one transaction with its listeners, so a van that turns out short throws and the order stays approved rather than claiming to be fulfilled with no stock behind it.
+- ADR-005 (order lifecycle) and ADR-006 (stock ledger).
+
+### What the review pass found
+
+The first review workflow died on a session limit with only one of five reviewers finished. That one reviewer, reading code alone, found six real defects — all of them the same shape: a guard in the right place watching the wrong thing.
+
+- The Filament order form exposed `status` and `total_minor` as free fields. A draft with no lines could be saved as fulfilled: no guard, no timestamp, no event, no stock movement. The stock ledger screen had the same hole and had already been closed the same way.
+- `changeQuantity()` and `removeLine()` never checked the line belonged to the order passed in, so the editability guard could be satisfied by a draft while a frozen order lost a line.
+- An order opened in `'etb'` rejected every ETB price as a currency mismatch.
+- `fulfil()` left the instance marked fulfilled after its transaction rolled back; `cancel()` set the reason before checking whether it could cancel.
+- Order references sorted as strings, which reissues a used number at the hundred-thousandth order of a year.
+
+Every one is now pinned by a test named after the case.
+
+**Lesson for next time**: constrain review agents to read-only. The Phase 1 review mutated production code to test whether the suite would catch it — it deleted a `where()` clause from the price resolver and injected a method into an enum — and left nine scratch test files behind, one of which reached a commit. The Phase 2 review ran with an explicit read-only contract and the `Explore` agent type, and left nothing behind while still finding six real bugs by reading alone.
+
+**Next**: Phase 3, the rep PWA and offline sync.

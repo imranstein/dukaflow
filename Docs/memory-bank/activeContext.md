@@ -2,10 +2,10 @@
 
 What's in flight right now. Read first when picking the project back up; update before putting it down.
 
-- **Current phase**: Phases 0 and 1 are done. Next up is Phase 2, orders and inventory.
-- **Next action**: sketch the Phase 2 plan against the source of truth. Start with an ADR on the order state machine, then the append-only stock ledger — the stock invariant (never negative without an explicit adjustment) is the thing to get right first.
-- **Do this before the stock ledger**: add MySQL to the CI matrix. The whole suite runs on SQLite while the source of truth names MySQL the primary target, so the primary target is never tested. SQLite enforces neither `VARCHAR` length nor `DECIMAL` scale, which already hid a four-character value sitting happily in a `string(3)` currency column. Ledger invariants are transaction and constraint behaviour, which is exactly where the two databases diverge most.
-- **State**: 100 Pest tests green, Larastan level 6 clean, Pint clean, CI green. Sail verified on PHP 8.3 with MySQL 8.4 alongside.
+- **Current phase**: Phases 0, 1 and 2 are done. Next up is Phase 3, the rep PWA and offline sync — the centrepiece.
+- **Next action**: write ADR-002 on the sync strategy **before any sync code**. The source of truth section 5 is the contract it has to detail. Orders already record the price list they were priced under, which is what the price-integrity rule needs.
+- **Done in Phase 2**: MySQL is in the CI matrix now, so the suite runs on both databases.
+- **State**: 283 Pest tests green on SQLite and MySQL, Larastan level 6 clean, Pint clean, CI green. Sail verified on PHP 8.3.
 - **Blockers**: none.
 
 ## Worth knowing before you touch anything
