@@ -45,7 +45,12 @@ final readonly class OrderWriter
             'customer_id' => $customerId,
             'sales_rep_id' => $salesRepId,
             'route_id' => $routeId,
-            'currency' => $currency,
+
+            // Normalised through Money, which is the only thing that decides
+            // what a currency code looks like. Storing 'etb' here would make
+            // every price on the order look like a currency mismatch.
+            'currency' => Money::zero($currency)->currency,
+
             'placed_at' => $placedAt,
         ]);
     }
@@ -130,6 +135,7 @@ final readonly class OrderWriter
 
     public function changeQuantity(Order $order, OrderLine $line, int $quantity): OrderLine
     {
+        $this->assertLineBelongsTo($order, $line);
         $order->assertLinesAreEditable();
 
         if ($quantity < 1) {
@@ -149,12 +155,25 @@ final readonly class OrderWriter
 
     public function removeLine(Order $order, OrderLine $line): void
     {
+        $this->assertLineBelongsTo($order, $line);
         $order->assertLinesAreEditable();
 
         DB::transaction(function () use ($order, $line): void {
             $line->delete();
             $order->recalculateTotal();
         });
+    }
+
+    /**
+     * Without this the editability guard protects the wrong record: pass a
+     * fresh draft alongside a line from a frozen order and the guard sees a
+     * draft, says yes, and the frozen order loses a line.
+     */
+    private function assertLineBelongsTo(Order $order, OrderLine $line): void
+    {
+        if ($line->order_id !== $order->id) {
+            throw OrderLineException::lineBelongsToAnotherOrder($line->id, $order->reference);
+        }
     }
 
     /**
@@ -171,8 +190,15 @@ final readonly class OrderWriter
         $year = $placedAt->format('Y');
         $prefix = "SO-{$year}-";
 
+        // Ordered by length first, then value. Sorting these as plain strings
+        // works only while the padding is uniform, and it stops being uniform
+        // at the hundred-thousandth order of a year: 'SO-2026-99999' sorts
+        // above 'SO-2026-100000', so the counter would hand out a number it
+        // had already used and every later order would collide on the unique
+        // key. Unlikely at one distributor's volume, and cheap to not have.
         $latest = Order::query()
             ->where('reference', 'like', $prefix.'%')
+            ->orderByRaw('length(reference) desc')
             ->orderByDesc('reference')
             ->value('reference');
 

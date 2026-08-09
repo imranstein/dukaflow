@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Orders\Filament\Resources\Orders;
 
-use App\Modules\Orders\Filament\Resources\Orders\Pages\CreateOrder;
 use App\Modules\Orders\Filament\Resources\Orders\Pages\EditOrder;
 use App\Modules\Orders\Filament\Resources\Orders\Pages\ListOrders;
 use App\Modules\Orders\Filament\Resources\Orders\Schemas\OrderForm;
@@ -39,6 +38,16 @@ class OrderResource extends Resource
         return OrdersTable::configure($table);
     }
 
+    /**
+     * Orders are opened by the action on the list page, which goes through
+     * OrderWriter. A create form would write a row with no reference and no
+     * currency normalisation.
+     */
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
     public static function getRelations(): array
     {
         return [
@@ -50,7 +59,6 @@ class OrderResource extends Resource
     {
         return [
             'index' => ListOrders::route('/'),
-            'create' => CreateOrder::route('/create'),
             'edit' => EditOrder::route('/{record}/edit'),
         ];
     }

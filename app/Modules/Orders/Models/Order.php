@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Throwable;
 
 /**
  * @property int $id
@@ -139,23 +140,45 @@ class Order extends Model
      */
     public function fulfil(): self
     {
-        return DB::transaction(function (): self {
-            $this->transitionTo(OrderStatus::Fulfilled, 'fulfilled_at');
+        $wasStatus = $this->status;
+        $wasFulfilledAt = $this->fulfilled_at;
 
-            Event::dispatch(new OrderFulfilled(
-                orderId: $this->id,
-                reference: $this->reference,
-                salesRepId: $this->sales_rep_id,
-                occurredAt: $this->fulfilled_at ?? Carbon::now(),
-                quantities: $this->lines()->pluck('quantity', 'product_id')->all(),
-            ));
+        try {
+            return DB::transaction(function (): self {
+                $this->transitionTo(OrderStatus::Fulfilled, 'fulfilled_at');
 
-            return $this;
-        });
+                Event::dispatch(new OrderFulfilled(
+                    orderId: $this->id,
+                    reference: $this->reference,
+                    salesRepId: $this->sales_rep_id,
+                    occurredAt: $this->fulfilled_at ?? Carbon::now(),
+                    quantities: $this->lines()->pluck('quantity', 'product_id')->all(),
+                ));
+
+                return $this;
+            });
+        } catch (Throwable $failure) {
+            // The row rolled back; this object did not. Left as it was, the
+            // instance would claim to be fulfilled, and a caller handling the
+            // failure by cancelling would be told a fulfilled order is final.
+            $this->status = $wasStatus;
+            $this->fulfilled_at = $wasFulfilledAt;
+            $this->syncOriginal();
+
+            throw $failure;
+        }
     }
 
     public function cancel(?string $reason = null): self
     {
+        // Checked before the reason is assigned. Setting it first leaves the
+        // attribute dirty on a live model when the transition is refused, and
+        // the next save of anything would quietly persist a cancellation
+        // reason onto an order that was never cancelled.
+        if (! $this->status->canMoveTo(OrderStatus::Cancelled)) {
+            throw OrderTransitionException::cannotMove($this->status, OrderStatus::Cancelled);
+        }
+
         $this->cancellation_reason = $reason;
 
         return $this->transitionTo(OrderStatus::Cancelled, 'cancelled_at');

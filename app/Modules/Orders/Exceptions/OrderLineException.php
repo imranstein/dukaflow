@@ -30,6 +30,11 @@ final class OrderLineException extends DomainException
         return new self("A line quantity must be at least 1, not {$quantity}.");
     }
 
+    public static function lineBelongsToAnotherOrder(int $lineId, string $reference): self
+    {
+        return new self("Line {$lineId} is not on order {$reference}.");
+    }
+
     public static function wrongCurrency(string $name, string $priced, string $order): self
     {
         return new self(
