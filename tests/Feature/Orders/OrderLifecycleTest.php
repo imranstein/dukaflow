@@ -132,12 +132,13 @@ it('says nothing when an order is merely approved', function () {
     Event::assertNotDispatched(OrderFulfilled::class);
 });
 
-it('knows which states have committed stock', function () {
-    expect(OrderStatus::Draft->hasCommittedStock())->toBeFalse()
-        ->and(OrderStatus::Submitted->hasCommittedStock())->toBeFalse()
-        ->and(OrderStatus::Approved->hasCommittedStock())->toBeTrue()
-        ->and(OrderStatus::Fulfilled->hasCommittedStock())->toBeTrue()
-        ->and(OrderStatus::Cancelled->hasCommittedStock())->toBeFalse();
+it('says stock has moved only once the goods have gone', function () {
+    // Approving an order does not touch the ledger; fulfilling it does.
+    expect(OrderStatus::Draft->hasMovedStock())->toBeFalse()
+        ->and(OrderStatus::Submitted->hasMovedStock())->toBeFalse()
+        ->and(OrderStatus::Approved->hasMovedStock())->toBeFalse()
+        ->and(OrderStatus::Fulfilled->hasMovedStock())->toBeTrue()
+        ->and(OrderStatus::Cancelled->hasMovedStock())->toBeFalse();
 });
 
 it('knows which states are the end of the road', function () {

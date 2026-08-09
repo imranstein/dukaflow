@@ -45,3 +45,30 @@ expect()->extend('toBeOne', function () {
 | global functions to help you to reduce the number of lines of code in your test files.
 |
 */
+
+/*
+ * Fixed ids for the ledger tests. These live here rather than as constants in
+ * one test file, because a constant defined in a sibling only exists when that
+ * sibling happens to be loaded: running the reconciliation tests on their own
+ * failed with "Undefined constant REP", and a second file defining the same
+ * name would have collided silently.
+ *
+ * They are deliberately not real records. The ledger references products,
+ * warehouses and reps by bare id across a module boundary, so it never loads
+ * them, and the tests are honest about that.
+ */
+
+function warehouseId(): int
+{
+    return 1;
+}
+
+function repId(): int
+{
+    return 7;
+}
+
+function productId(): int
+{
+    return 42;
+}

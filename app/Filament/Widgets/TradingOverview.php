@@ -53,18 +53,22 @@ class TradingOverview extends StatsOverviewWidget
 
     private function owed(): Stat
     {
-        // Everything invoiced, less everything paid against it. Cancelled
-        // orders are not owed, and drafts were never asked for.
+        // Summed per order and floored at zero, matching Order::balance().
+        // Netting the totals against the payments in one go would let an
+        // overpaid order cancel out somebody else's debt, so the dashboard
+        // and the orders table would disagree about the same money.
+        $balance = 'total_minor - coalesce((select sum(amount_minor) from order_payments '
+            .'where order_payments.order_id = orders.id), 0)';
+
         $owed = (int) Order::query()
+            // Cancelled orders are not owed, and drafts were never asked for.
             ->whereIn('status', [OrderStatus::Submitted, OrderStatus::Approved, OrderStatus::Fulfilled])
             ->selectRaw(
-                'coalesce(sum(total_minor), 0) - coalesce((select sum(amount_minor) from order_payments '
-                .'where order_payments.order_id in (select id from orders where status in (?, ?, ?))), 0) as owed',
-                [OrderStatus::Submitted->value, OrderStatus::Approved->value, OrderStatus::Fulfilled->value],
+                "coalesce(sum(case when {$balance} > 0 then {$balance} else 0 end), 0) as owed"
             )
             ->value('owed');
 
-        return Stat::make('Outstanding', Money::ofMinor(max(0, $owed))->format())
+        return Stat::make('Outstanding', Money::ofMinor($owed)->format())
             ->description('Invoiced and not yet settled')
             ->descriptionIcon('heroicon-m-banknotes')
             ->color($owed > 0 ? 'warning' : 'success');

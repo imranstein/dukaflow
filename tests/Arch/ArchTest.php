@@ -19,11 +19,11 @@ arch('application code declares strict types')
 
 arch('catalog does not reach into another module')
     ->expect('App\Modules\Catalog')
-    ->not->toUse(['App\Modules\Distribution', 'App\Modules\Orders']);
+    ->not->toUse(['App\Modules\Distribution', 'App\Modules\Orders', 'App\Modules\Inventory']);
 
 arch('distribution does not reach into another module')
     ->expect('App\Modules\Distribution')
-    ->not->toUse(['App\Modules\Catalog', 'App\Modules\Orders']);
+    ->not->toUse(['App\Modules\Catalog', 'App\Modules\Orders', 'App\Modules\Inventory']);
 
 /*
  * Orders is downstream of both Catalog and Distribution and still depends on
@@ -35,7 +35,11 @@ arch('distribution does not reach into another module')
 
 arch('orders does not reach into another module')
     ->expect('App\Modules\Orders')
-    ->not->toUse(['App\Modules\Catalog', 'App\Modules\Distribution']);
+    ->not->toUse(['App\Modules\Catalog', 'App\Modules\Distribution', 'App\Modules\Inventory']);
+
+arch('inventory does not reach into another module')
+    ->expect('App\Modules\Inventory')
+    ->not->toUse(['App\Modules\Catalog', 'App\Modules\Distribution', 'App\Modules\Orders']);
 
 arch('the shared kernel depends on no module')
     ->expect('App\Support')

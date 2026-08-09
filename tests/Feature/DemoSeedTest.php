@@ -13,6 +13,12 @@ use App\Modules\Distribution\Enums\OutletType;
 use App\Modules\Distribution\Models\Customer;
 use App\Modules\Distribution\Models\Route;
 use App\Modules\Distribution\Models\SalesRep;
+use App\Modules\Inventory\Models\StockMovement;
+use App\Modules\Inventory\Models\StockReconciliation;
+use App\Modules\Inventory\Models\Warehouse;
+use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Models\OrderLine;
+use App\Modules\Orders\Models\OrderPayment;
 use Database\Seeders\DatabaseSeeder;
 
 use function Pest\Laravel\seed;
@@ -49,6 +55,17 @@ it('puts every outlet on a route with at least one visit day', function () {
         ->and(Customer::query()->whereNull('latitude')->count())->toBe(0);
 });
 
+it('seeds a week of trading so the order screens are not empty', function () {
+    seed(DatabaseSeeder::class);
+
+    expect(Order::query()->count())->toBeGreaterThan(0)
+        ->and(OrderLine::query()->count())->toBeGreaterThan(0)
+        ->and(OrderPayment::query()->count())->toBeGreaterThan(0)
+        ->and(StockMovement::query()->count())->toBeGreaterThan(0)
+        ->and(Warehouse::query()->count())->toBe(2)
+        ->and(StockReconciliation::query()->count())->toBe(1);
+});
+
 it('creates one login per role', function () {
     seed(DatabaseSeeder::class);
 
@@ -77,19 +94,26 @@ it('shows the resolver choosing between two lists', function () {
 it('can be run twice without duplicating anything', function () {
     seed(DatabaseSeeder::class);
 
-    $before = [
-        Product::query()->count(),
-        Customer::query()->count(),
-        PriceListAssignment::query()->count(),
-        User::query()->count(),
+    $counts = fn (): array => [
+        'products' => Product::query()->count(),
+        'customers' => Customer::query()->count(),
+        'assignments' => PriceListAssignment::query()->count(),
+        'users' => User::query()->count(),
+
+        // The trading data too. Counting only the Phase 1 tables meant the
+        // guard in TradingDemoSeeder could be deleted with this still green,
+        // and a second seed would have stacked another week of orders.
+        'orders' => Order::query()->count(),
+        'order lines' => OrderLine::query()->count(),
+        'payments' => OrderPayment::query()->count(),
+        'movements' => StockMovement::query()->count(),
+        'warehouses' => Warehouse::query()->count(),
+        'reconciliations' => StockReconciliation::query()->count(),
     ];
+
+    $before = $counts();
 
     seed(DatabaseSeeder::class);
 
-    expect([
-        Product::query()->count(),
-        Customer::query()->count(),
-        PriceListAssignment::query()->count(),
-        User::query()->count(),
-    ])->toBe($before);
+    expect($counts())->toBe($before);
 });

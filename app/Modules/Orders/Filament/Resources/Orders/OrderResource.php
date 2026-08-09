@@ -6,6 +6,7 @@ namespace App\Modules\Orders\Filament\Resources\Orders;
 
 use App\Modules\Orders\Filament\Resources\Orders\Pages\EditOrder;
 use App\Modules\Orders\Filament\Resources\Orders\Pages\ListOrders;
+use App\Modules\Orders\Filament\Resources\Orders\RelationManagers\LinesRelationManager;
 use App\Modules\Orders\Filament\Resources\Orders\Schemas\OrderForm;
 use App\Modules\Orders\Filament\Resources\Orders\Tables\OrdersTable;
 use App\Modules\Orders\Models\Order;
@@ -51,7 +52,7 @@ class OrderResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            LinesRelationManager::class,
         ];
     }
 

@@ -17,81 +17,77 @@ use Illuminate\Support\Carbon;
  * because that is the only thing that knows what is where.
  */
 
-const WAREHOUSE = 1;
-const REP = 7;
-const PRODUCT = 42;
-
 function ledger(): StockLedger
 {
     return app(StockLedger::class);
 }
 
 it('starts with nothing anywhere', function () {
-    expect(ledger()->balance(PRODUCT, LocationType::Warehouse, WAREHOUSE))->toBe(0)
-        ->and(ledger()->balances(LocationType::Warehouse, WAREHOUSE))->toBe([]);
+    expect(ledger()->balance(productId(), LocationType::Warehouse, warehouseId()))->toBe(0)
+        ->and(ledger()->balances(LocationType::Warehouse, warehouseId()))->toBe([]);
 });
 
 it('adds up every movement rather than storing a total', function () {
-    ledger()->receive(PRODUCT, WAREHOUSE, 100);
-    ledger()->receive(PRODUCT, WAREHOUSE, 50);
+    ledger()->receive(productId(), warehouseId(), 100);
+    ledger()->receive(productId(), warehouseId(), 50);
 
-    expect(ledger()->balance(PRODUCT, LocationType::Warehouse, WAREHOUSE))->toBe(150)
+    expect(ledger()->balance(productId(), LocationType::Warehouse, warehouseId()))->toBe(150)
         ->and(StockMovement::query()->count())->toBe(2);
 });
 
 it('keeps each place separate', function () {
-    ledger()->receive(PRODUCT, WAREHOUSE, 100);
-    ledger()->receive(PRODUCT, 2, 30);
+    ledger()->receive(productId(), warehouseId(), 100);
+    ledger()->receive(productId(), 2, 30);
 
-    expect(ledger()->balance(PRODUCT, LocationType::Warehouse, WAREHOUSE))->toBe(100)
-        ->and(ledger()->balance(PRODUCT, LocationType::Warehouse, 2))->toBe(30)
-        ->and(ledger()->balance(PRODUCT, LocationType::Van, WAREHOUSE))->toBe(0);
+    expect(ledger()->balance(productId(), LocationType::Warehouse, warehouseId()))->toBe(100)
+        ->and(ledger()->balance(productId(), LocationType::Warehouse, 2))->toBe(30)
+        ->and(ledger()->balance(productId(), LocationType::Van, warehouseId()))->toBe(0);
 });
 
 it('will not let a sale take a balance below zero', function () {
-    ledger()->receive(PRODUCT, WAREHOUSE, 5);
+    ledger()->receive(productId(), warehouseId(), 5);
 
-    ledger()->sell(PRODUCT, LocationType::Warehouse, WAREHOUSE, 6, orderId: 1);
+    ledger()->sell(productId(), LocationType::Warehouse, warehouseId(), 6, orderId: 1);
 })->throws(InsufficientStockException::class, 'has 5 in warehouse 1, which is not enough to take 6');
 
 it('will not let a van load overdraw the warehouse', function () {
-    ledger()->receive(PRODUCT, WAREHOUSE, 10);
+    ledger()->receive(productId(), warehouseId(), 10);
 
-    ledger()->loadVan(PRODUCT, WAREHOUSE, REP, 11);
+    ledger()->loadVan(productId(), warehouseId(), repId(), 11);
 })->throws(InsufficientStockException::class);
 
 it('allows a sale that empties the balance exactly', function () {
-    ledger()->receive(PRODUCT, WAREHOUSE, 5);
-    ledger()->sell(PRODUCT, LocationType::Warehouse, WAREHOUSE, 5, orderId: 1);
+    ledger()->receive(productId(), warehouseId(), 5);
+    ledger()->sell(productId(), LocationType::Warehouse, warehouseId(), 5, orderId: 1);
 
-    expect(ledger()->balance(PRODUCT, LocationType::Warehouse, WAREHOUSE))->toBe(0);
+    expect(ledger()->balance(productId(), LocationType::Warehouse, warehouseId()))->toBe(0);
 });
 
 it('leaves nothing behind when a movement is refused', function () {
-    ledger()->receive(PRODUCT, WAREHOUSE, 3);
+    ledger()->receive(productId(), warehouseId(), 3);
 
     try {
-        ledger()->sell(PRODUCT, LocationType::Warehouse, WAREHOUSE, 10, orderId: 1);
+        ledger()->sell(productId(), LocationType::Warehouse, warehouseId(), 10, orderId: 1);
     } catch (InsufficientStockException) {
         // expected
     }
 
     expect(StockMovement::query()->count())->toBe(1)
-        ->and(ledger()->balance(PRODUCT, LocationType::Warehouse, WAREHOUSE))->toBe(3);
+        ->and(ledger()->balance(productId(), LocationType::Warehouse, warehouseId()))->toBe(3);
 });
 
 it('lets an adjustment take a balance negative, because reality sometimes has', function () {
-    ledger()->receive(PRODUCT, WAREHOUSE, 2);
+    ledger()->receive(productId(), warehouseId(), 2);
 
     $movement = ledger()->adjust(
-        PRODUCT,
+        productId(),
         LocationType::Warehouse,
-        WAREHOUSE,
+        warehouseId(),
         -5,
         reason: 'Counted a pallet that was never there.',
     );
 
-    expect(ledger()->balance(PRODUCT, LocationType::Warehouse, WAREHOUSE))->toBe(-3)
+    expect(ledger()->balance(productId(), LocationType::Warehouse, warehouseId()))->toBe(-3)
         ->and($movement->type)->toBe(MovementType::Adjustment)
         ->and($movement->notes)->toBe('Counted a pallet that was never there.');
 });
@@ -105,35 +101,35 @@ it('marks only adjustments as allowed to go negative', function () {
 });
 
 it('moves stock onto a van as two movements so both places tell the truth', function () {
-    ledger()->receive(PRODUCT, WAREHOUSE, 100);
+    ledger()->receive(productId(), warehouseId(), 100);
 
-    ledger()->loadVan(PRODUCT, WAREHOUSE, REP, 40);
+    ledger()->loadVan(productId(), warehouseId(), repId(), 40);
 
-    expect(ledger()->balance(PRODUCT, LocationType::Warehouse, WAREHOUSE))->toBe(60)
-        ->and(ledger()->balance(PRODUCT, LocationType::Van, REP))->toBe(40)
+    expect(ledger()->balance(productId(), LocationType::Warehouse, warehouseId()))->toBe(60)
+        ->and(ledger()->balance(productId(), LocationType::Van, repId()))->toBe(40)
         ->and(StockMovement::query()->where('type', MovementType::VanLoad)->count())->toBe(2);
 });
 
 it('brings the unsold stock back', function () {
-    ledger()->receive(PRODUCT, WAREHOUSE, 100);
-    ledger()->loadVan(PRODUCT, WAREHOUSE, REP, 40);
-    ledger()->sell(PRODUCT, LocationType::Van, REP, 25, orderId: 1);
-    ledger()->returnFromVan(PRODUCT, REP, WAREHOUSE, 15);
+    ledger()->receive(productId(), warehouseId(), 100);
+    ledger()->loadVan(productId(), warehouseId(), repId(), 40);
+    ledger()->sell(productId(), LocationType::Van, repId(), 25, orderId: 1);
+    ledger()->returnFromVan(productId(), repId(), warehouseId(), 15);
 
-    expect(ledger()->balance(PRODUCT, LocationType::Van, REP))->toBe(0)
-        ->and(ledger()->balance(PRODUCT, LocationType::Warehouse, WAREHOUSE))->toBe(75);
+    expect(ledger()->balance(productId(), LocationType::Van, repId()))->toBe(0)
+        ->and(ledger()->balance(productId(), LocationType::Warehouse, warehouseId()))->toBe(75);
 });
 
 it('will not return more than the van is carrying', function () {
-    ledger()->receive(PRODUCT, WAREHOUSE, 50);
-    ledger()->loadVan(PRODUCT, WAREHOUSE, REP, 10);
+    ledger()->receive(productId(), warehouseId(), 50);
+    ledger()->loadVan(productId(), warehouseId(), repId(), 10);
 
-    ledger()->returnFromVan(PRODUCT, REP, WAREHOUSE, 11);
+    ledger()->returnFromVan(productId(), repId(), warehouseId(), 11);
 })->throws(InsufficientStockException::class);
 
 it('names the order a sale came from', function () {
-    ledger()->receive(PRODUCT, WAREHOUSE, 10);
-    $sale = ledger()->sell(PRODUCT, LocationType::Warehouse, WAREHOUSE, 4, orderId: 99);
+    ledger()->receive(productId(), warehouseId(), 10);
+    $sale = ledger()->sell(productId(), LocationType::Warehouse, warehouseId(), 4, orderId: 99);
 
     expect($sale->reference_type)->toBe('order')
         ->and($sale->reference_id)->toBe(99)
@@ -141,33 +137,33 @@ it('names the order a sale came from', function () {
 });
 
 it('reports everything on a van in one go', function () {
-    ledger()->receive(PRODUCT, WAREHOUSE, 100);
-    ledger()->receive(99, WAREHOUSE, 100);
-    ledger()->receive(123, WAREHOUSE, 100);
+    ledger()->receive(productId(), warehouseId(), 100);
+    ledger()->receive(99, warehouseId(), 100);
+    ledger()->receive(123, warehouseId(), 100);
 
-    ledger()->loadVan(PRODUCT, WAREHOUSE, REP, 10);
-    ledger()->loadVan(99, WAREHOUSE, REP, 5);
-    ledger()->loadVan(123, WAREHOUSE, REP, 8);
-    ledger()->sell(123, LocationType::Van, REP, 8, orderId: 1);
+    ledger()->loadVan(productId(), warehouseId(), repId(), 10);
+    ledger()->loadVan(99, warehouseId(), repId(), 5);
+    ledger()->loadVan(123, warehouseId(), repId(), 8);
+    ledger()->sell(123, LocationType::Van, repId(), 8, orderId: 1);
 
     // The one sold out entirely is not carried, so it is not listed.
-    expect(ledger()->balances(LocationType::Van, REP))->toBe([PRODUCT => 10, 99 => 5]);
+    expect(ledger()->balances(LocationType::Van, repId()))->toBe([productId() => 10, 99 => 5]);
 });
 
 it('refuses to let a movement be edited', function () {
-    $movement = ledger()->receive(PRODUCT, WAREHOUSE, 10);
+    $movement = ledger()->receive(productId(), warehouseId(), 10);
 
     $movement->update(['quantity' => 1000]);
 })->throws(LogicException::class, 'append-only');
 
 it('refuses to let a movement be deleted', function () {
-    $movement = ledger()->receive(PRODUCT, WAREHOUSE, 10);
+    $movement = ledger()->receive(productId(), warehouseId(), 10);
 
     $movement->delete();
 })->throws(LogicException::class, 'append-only');
 
 it('keeps the balance intact after a failed edit', function () {
-    $movement = ledger()->receive(PRODUCT, WAREHOUSE, 10);
+    $movement = ledger()->receive(productId(), warehouseId(), 10);
 
     try {
         $movement->update(['quantity' => 1000]);
@@ -175,16 +171,16 @@ it('keeps the balance intact after a failed edit', function () {
         // expected
     }
 
-    expect(ledger()->balance(PRODUCT, LocationType::Warehouse, WAREHOUSE))->toBe(10);
+    expect(ledger()->balance(productId(), LocationType::Warehouse, warehouseId()))->toBe(10);
 });
 
 it('records when a movement happened, not just when it was written', function () {
     $yesterday = Carbon::yesterday();
-    $movement = ledger()->receive(PRODUCT, WAREHOUSE, 10, on: $yesterday);
+    $movement = ledger()->receive(productId(), warehouseId(), 10, on: $yesterday);
 
     expect($movement->occurred_at->toDateString())->toBe($yesterday->toDateString());
 });
 
 it('treats a sale from an empty van as impossible', function () {
-    ledger()->sell(PRODUCT, LocationType::Van, REP, 1, orderId: 1);
+    ledger()->sell(productId(), LocationType::Van, repId(), 1, orderId: 1);
 })->throws(InsufficientStockException::class, 'has 0 in van 7');

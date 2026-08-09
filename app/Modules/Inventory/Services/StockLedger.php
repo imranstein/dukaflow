@@ -10,6 +10,7 @@ use App\Modules\Inventory\Exceptions\InsufficientStockException;
 use App\Modules\Inventory\Models\StockMovement;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 /**
  * The only way stock moves.
@@ -71,6 +72,12 @@ final class StockLedger
         ?int $referenceId = null,
         ?string $notes = null,
     ): StockMovement {
+        if ($quantity === 0) {
+            throw new InvalidArgumentException(
+                'A movement of zero says nothing. The ledger is evidence; do not pad it.'
+            );
+        }
+
         return DB::transaction(function () use (
             $productId, $locationType, $locationId, $quantity, $type,
             $occurredAt, $referenceType, $referenceId, $notes
@@ -107,6 +114,23 @@ final class StockLedger
         });
     }
 
+    /**
+     * These four take a plain count, not a signed delta, and each decides the
+     * direction itself. abs() used to hide a caller's sign error: passing -50
+     * to receive() added 50 rather than failing.
+     */
+    private function assertCountable(int $quantity): int
+    {
+        if ($quantity < 1) {
+            throw new InvalidArgumentException(
+                "A movement needs a quantity of at least 1, not {$quantity}. "
+                .'Use adjust() to take stock away.'
+            );
+        }
+
+        return $quantity;
+    }
+
     /** Stock arriving from a supplier. */
     public function receive(int $productId, int $warehouseId, int $quantity, ?Carbon $on = null): StockMovement
     {
@@ -114,7 +138,7 @@ final class StockLedger
             productId: $productId,
             locationType: LocationType::Warehouse,
             locationId: $warehouseId,
-            quantity: abs($quantity),
+            quantity: $this->assertCountable($quantity),
             type: MovementType::Receipt,
             occurredAt: $on,
         );
@@ -133,7 +157,7 @@ final class StockLedger
         int $quantity,
         ?Carbon $on = null,
     ): array {
-        $quantity = abs($quantity);
+        $quantity = $this->assertCountable($quantity);
 
         return DB::transaction(fn (): array => [
             'out' => $this->record(
@@ -171,7 +195,7 @@ final class StockLedger
         int $quantity,
         ?Carbon $on = null,
     ): array {
-        $quantity = abs($quantity);
+        $quantity = $this->assertCountable($quantity);
 
         return DB::transaction(fn (): array => [
             'out' => $this->record(
@@ -210,7 +234,7 @@ final class StockLedger
             productId: $productId,
             locationType: $locationType,
             locationId: $locationId,
-            quantity: -abs($quantity),
+            quantity: -$this->assertCountable($quantity),
             type: MovementType::Sale,
             occurredAt: $on,
             referenceType: 'order',

@@ -33,7 +33,7 @@ function reconciliationFor(int $repId, array $counts): StockReconciliation
 }
 
 it('reports a variance without touching the ledger', function () {
-    $reconciliation = reconciliationFor(REP, [PRODUCT => [12, 11]]);
+    $reconciliation = reconciliationFor(repId(), [productId() => [12, 11]]);
 
     expect($reconciliation->hasVariance())->toBeTrue()
         ->and($reconciliation->variances())->toHaveCount(1)
@@ -43,7 +43,7 @@ it('reports a variance without touching the ledger', function () {
 });
 
 it('sees no variance when the count agrees', function () {
-    $reconciliation = reconciliationFor(REP, [PRODUCT => [12, 12], 99 => [4, 4]]);
+    $reconciliation = reconciliationFor(repId(), [productId() => [12, 12], 99 => [4, 4]]);
 
     expect($reconciliation->hasVariance())->toBeFalse()
         ->and($reconciliation->variances())->toBeEmpty();
@@ -51,17 +51,17 @@ it('sees no variance when the count agrees', function () {
 
 it('writes an adjustment per variance when it closes', function () {
     $ledger = app(StockLedger::class);
-    $ledger->receive(PRODUCT, WAREHOUSE, 100);
-    $ledger->loadVan(PRODUCT, WAREHOUSE, REP, 12);
+    $ledger->receive(productId(), warehouseId(), 100);
+    $ledger->loadVan(productId(), warehouseId(), repId(), 12);
 
-    $reconciliation = reconciliationFor(REP, [PRODUCT => [12, 11]]);
+    $reconciliation = reconciliationFor(repId(), [productId() => [12, 11]]);
     $reconciliation->close($ledger);
 
     $adjustment = StockMovement::query()->where('type', MovementType::Adjustment)->sole();
 
     expect($adjustment->quantity)->toBe(-1)
         ->and($adjustment->location_type)->toBe(LocationType::Van)
-        ->and($adjustment->location_id)->toBe(REP)
+        ->and($adjustment->location_id)->toBe(repId())
         ->and($adjustment->reference_type)->toBe('reconciliation')
         ->and($adjustment->reference_id)->toBe($reconciliation->id)
         ->and($adjustment->notes)->toContain('ledger said 12, counted 11');
@@ -69,40 +69,40 @@ it('writes an adjustment per variance when it closes', function () {
 
 it('makes the ledger agree with the count', function () {
     $ledger = app(StockLedger::class);
-    $ledger->receive(PRODUCT, WAREHOUSE, 100);
-    $ledger->loadVan(PRODUCT, WAREHOUSE, REP, 12);
+    $ledger->receive(productId(), warehouseId(), 100);
+    $ledger->loadVan(productId(), warehouseId(), repId(), 12);
 
-    reconciliationFor(REP, [PRODUCT => [12, 11]])->close($ledger);
+    reconciliationFor(repId(), [productId() => [12, 11]])->close($ledger);
 
-    expect($ledger->balance(PRODUCT, LocationType::Van, REP))->toBe(11);
+    expect($ledger->balance(productId(), LocationType::Van, repId()))->toBe(11);
 });
 
 it('handles a surplus as readily as a shortage', function () {
     $ledger = app(StockLedger::class);
-    $ledger->receive(PRODUCT, WAREHOUSE, 100);
-    $ledger->loadVan(PRODUCT, WAREHOUSE, REP, 10);
+    $ledger->receive(productId(), warehouseId(), 100);
+    $ledger->loadVan(productId(), warehouseId(), repId(), 10);
 
-    reconciliationFor(REP, [PRODUCT => [10, 13]])->close($ledger);
+    reconciliationFor(repId(), [productId() => [10, 13]])->close($ledger);
 
-    expect($ledger->balance(PRODUCT, LocationType::Van, REP))->toBe(13)
+    expect($ledger->balance(productId(), LocationType::Van, repId()))->toBe(13)
         ->and(StockMovement::query()->where('type', MovementType::Adjustment)->sole()->quantity)->toBe(3);
 });
 
 it('writes nothing for the products that counted correctly', function () {
     $ledger = app(StockLedger::class);
-    $ledger->receive(PRODUCT, WAREHOUSE, 100);
-    $ledger->receive(99, WAREHOUSE, 100);
-    $ledger->loadVan(PRODUCT, WAREHOUSE, REP, 12);
-    $ledger->loadVan(99, WAREHOUSE, REP, 4);
+    $ledger->receive(productId(), warehouseId(), 100);
+    $ledger->receive(99, warehouseId(), 100);
+    $ledger->loadVan(productId(), warehouseId(), repId(), 12);
+    $ledger->loadVan(99, warehouseId(), repId(), 4);
 
-    reconciliationFor(REP, [PRODUCT => [12, 11], 99 => [4, 4]])->close($ledger);
+    reconciliationFor(repId(), [productId() => [12, 11], 99 => [4, 4]])->close($ledger);
 
     expect(StockMovement::query()->where('type', MovementType::Adjustment)->count())->toBe(1);
 });
 
 it('closes only once', function () {
     $ledger = app(StockLedger::class);
-    $reconciliation = reconciliationFor(REP, [PRODUCT => [1, 1]]);
+    $reconciliation = reconciliationFor(repId(), [productId() => [1, 1]]);
 
     $reconciliation->close($ledger);
     $reconciliation->close($ledger);
@@ -110,7 +110,7 @@ it('closes only once', function () {
 
 it('records when it was closed', function () {
     $ledger = app(StockLedger::class);
-    $reconciliation = reconciliationFor(REP, [PRODUCT => [5, 5]]);
+    $reconciliation = reconciliationFor(repId(), [productId() => [5, 5]]);
 
     expect($reconciliation->isOpen())->toBeTrue();
 
@@ -122,12 +122,12 @@ it('records when it was closed', function () {
 });
 
 it('allows one count per rep per day', function () {
-    StockReconciliation::factory()->forRep(REP)->create(['reconciled_on' => today()]);
-    StockReconciliation::factory()->forRep(REP)->create(['reconciled_on' => today()]);
+    StockReconciliation::factory()->forRep(repId())->create(['reconciled_on' => today()]);
+    StockReconciliation::factory()->forRep(repId())->create(['reconciled_on' => today()]);
 })->throws(UniqueConstraintViolationException::class);
 
 it('lets a different rep count on the same day', function () {
-    StockReconciliation::factory()->forRep(REP)->create(['reconciled_on' => today()]);
+    StockReconciliation::factory()->forRep(repId())->create(['reconciled_on' => today()]);
     StockReconciliation::factory()->forRep(8)->create(['reconciled_on' => today()]);
 
     expect(StockReconciliation::query()->count())->toBe(2);
@@ -135,10 +135,10 @@ it('lets a different rep count on the same day', function () {
 
 it('leaves an adjustment that can be traced back to the count', function () {
     $ledger = app(StockLedger::class);
-    $ledger->receive(PRODUCT, WAREHOUSE, 50);
-    $ledger->loadVan(PRODUCT, WAREHOUSE, REP, 20);
+    $ledger->receive(productId(), warehouseId(), 50);
+    $ledger->loadVan(productId(), warehouseId(), repId(), 20);
 
-    $reconciliation = reconciliationFor(REP, [PRODUCT => [20, 18]]);
+    $reconciliation = reconciliationFor(repId(), [productId() => [20, 18]]);
     $reconciliation->close($ledger);
 
     $traced = StockMovement::query()

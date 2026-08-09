@@ -61,10 +61,15 @@ enum OrderStatus: string
         return $this === self::Draft;
     }
 
-    /** Stock is committed once the office has accepted the order. */
-    public function hasCommittedStock(): bool
+    /**
+     * Whether the goods have actually left, which is the only question the
+     * ledger can answer for. There was a hasCommittedStock() here that also
+     * counted Approved; nothing called it, and it would have told a caller
+     * that approving an order moves stock, which it does not.
+     */
+    public function hasMovedStock(): bool
     {
-        return $this === self::Approved || $this === self::Fulfilled;
+        return $this === self::Fulfilled;
     }
 
     /** @return array<string, string> */

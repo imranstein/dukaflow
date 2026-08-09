@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Str;
 use Symfony\Component\Finder\Finder;
 
 /*
@@ -133,8 +134,18 @@ it('keeps module migrations off other modules tables', function () {
                 }
 
                 foreach ($tables as $table) {
+                    // Named explicitly: ->constrained('customers')
                     if (preg_match("/constrained\(\s*'{$table}'/", $contents) === 1) {
                         $violations[] = "{$path} constrains against {$table}";
+                    }
+
+                    // Inferred from the column, which is how every migration
+                    // in this repo is actually written:
+                    // ->foreignId('customer_id')->constrained()
+                    $column = Str::singular($table).'_id';
+
+                    if (preg_match("/foreignId\(\s*'{$column}'\s*\)[^;]*->constrained\(\s*\)/s", $contents) === 1) {
+                        $violations[] = "{$path} constrains against {$table} through {$column}";
                     }
                 }
             }

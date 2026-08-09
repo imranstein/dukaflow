@@ -82,8 +82,21 @@ class StockReconciliation extends Model
         }
 
         return DB::transaction(function () use ($ledger): self {
+            // Re-read under the lock. Closing twice from two instances of the
+            // same row would otherwise apply every adjustment twice.
+            $locked = static::query()->whereKey($this->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($locked->status !== ReconciliationStatus::Open) {
+                throw new LogicException("Reconciliation {$this->id} is already closed.");
+            }
+
             foreach ($this->lines as $line) {
-                $variance = $line->variance();
+                // Against the ledger as it stands now, not the number written
+                // on the count sheet. A sale landing between drawing the sheet
+                // and closing it would otherwise leave the books disagreeing
+                // with the count, which is the one thing this must not do.
+                $onLedger = $ledger->balance($line->product_id, LocationType::Van, $this->sales_rep_id);
+                $variance = $line->counted_quantity - $onLedger;
 
                 if ($variance === 0) {
                     continue;
@@ -97,7 +110,7 @@ class StockReconciliation extends Model
                     reason: sprintf(
                         'End of day count on %s: ledger said %d, counted %d.',
                         $this->reconciled_on->toDateString(),
-                        $line->expected_quantity,
+                        $onLedger,
                         $line->counted_quantity,
                     ),
                     on: $this->reconciled_on,
