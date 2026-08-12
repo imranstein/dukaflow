@@ -28,6 +28,7 @@ class SyncServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom(__DIR__.'/Database/Migrations');
+        $this->loadRoutesFrom(__DIR__.'/Routes/sync.php');
 
         foreach (self::MODELS as $model) {
             Gate::policy($model, BackOfficePolicy::class);

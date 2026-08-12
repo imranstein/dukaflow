@@ -10,10 +10,14 @@ use App\Modules\Distribution\Models\SalesRep;
 use App\Modules\Distribution\Models\VisitOutcome;
 use App\Modules\Distribution\Models\VisitSchedule;
 use App\Modules\Distribution\Support\DistributionDirectory;
+use App\Modules\Distribution\Support\DistributionReps;
 use App\Modules\Distribution\Support\DistributionSyncFeed;
+use App\Modules\Distribution\Support\DistributionVisitIntake;
 use App\Policies\BackOfficePolicy;
 use App\Support\CompositeScopeDirectory;
 use App\Support\CompositeSyncFeed;
+use App\Support\Contracts\RepDirectory;
+use App\Support\Contracts\VisitOutcomeIntake;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -32,6 +36,15 @@ class DistributionServiceProvider extends ServiceProvider
         VisitSchedule::class,
         VisitOutcome::class,
     ];
+
+    public function register(): void
+    {
+        // Sync turns a pushed visit outcome into a real one through this
+        // contract, never through VisitOutcome directly. See
+        // Docs/adr/0002-offline-sync-strategy.md §7.
+        $this->app->bind(VisitOutcomeIntake::class, DistributionVisitIntake::class);
+        $this->app->bind(RepDirectory::class, DistributionReps::class);
+    }
 
     public function boot(): void
     {
