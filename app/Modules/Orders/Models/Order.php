@@ -23,6 +23,7 @@ use Throwable;
 /**
  * @property int $id
  * @property string $reference
+ * @property string|null $client_id
  * @property int $customer_id
  * @property int|null $sales_rep_id
  * @property int|null $route_id
@@ -54,6 +55,7 @@ class Order extends Model
     /** @var list<string> */
     protected $fillable = [
         'reference',
+        'client_id',
         'customer_id',
         'sales_rep_id',
         'route_id',

@@ -30,7 +30,7 @@ function tableOwners(): array
 {
     return [
         'Catalog' => ['products', 'units_of_measure', 'price_lists', 'price_list_items', 'price_list_assignments'],
-        'Distribution' => ['customers', 'routes', 'sales_reps', 'visit_schedules'],
+        'Distribution' => ['customers', 'routes', 'sales_reps', 'visit_schedules', 'visit_outcomes'],
         'Inventory' => ['warehouses', 'stock_movements', 'stock_reconciliations', 'stock_reconciliation_lines'],
         'Orders' => ['orders', 'order_lines', 'order_payments'],
     ];

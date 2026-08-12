@@ -7,6 +7,7 @@ namespace App\Modules\Distribution;
 use App\Modules\Distribution\Models\Customer;
 use App\Modules\Distribution\Models\Route;
 use App\Modules\Distribution\Models\SalesRep;
+use App\Modules\Distribution\Models\VisitOutcome;
 use App\Modules\Distribution\Models\VisitSchedule;
 use App\Modules\Distribution\Support\DistributionDirectory;
 use App\Policies\BackOfficePolicy;
@@ -27,6 +28,7 @@ class DistributionServiceProvider extends ServiceProvider
         Route::class,
         SalesRep::class,
         VisitSchedule::class,
+        VisitOutcome::class,
     ];
 
     public function boot(): void
