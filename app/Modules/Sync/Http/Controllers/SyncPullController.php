@@ -15,6 +15,7 @@ use App\Support\Contracts\RepDirectory;
 use App\Support\SyncCursor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 
 class SyncPullController extends Controller
 {
@@ -34,10 +35,19 @@ class SyncPullController extends Controller
         $device = SyncDevice::seenNow((string) $request->string('device_id'), $salesRepId);
 
         $cursorToken = $request->string('cursor')->value() ?: null;
-        $cursor = SyncCursor::decode($cursorToken);
+
+        try {
+            $cursor = SyncCursor::decode($cursorToken);
+        } catch (InvalidArgumentException) {
+            // A device's local cursor got corrupted or the format changed
+            // under it. A clean 422 lets it discard the cursor and re-pull
+            // from scratch; a 500 would read as the server being down.
+            abort(422, 'That cursor is not valid. Drop it and pull again from the start.');
+        }
+
         $limit = (int) ($request->integer('limit') ?: self::DEFAULT_LIMIT);
 
-        $rows = $feed->pull($entityType, $cursor, $limit);
+        $rows = $feed->pull($entityType, $cursor, $limit, $salesRepId);
 
         $lastRow = end($rows);
         $nextCursor = $lastRow === false

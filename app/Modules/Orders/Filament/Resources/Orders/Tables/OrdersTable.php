@@ -12,6 +12,7 @@ use App\Support\Scope;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -53,6 +54,22 @@ class OrdersTable
                     ->placeholder('—')
                     ->toggleable()
                     ->formatStateUsing(fn (?int $state): ?string => $state === null ? null : ($routes[$state] ?? "#{$state}")),
+
+                // Set when a synced order's captured price disagreed with
+                // the pricebook at push time — see
+                // Docs/adr/0002-offline-sync-strategy.md §5. The order kept
+                // the rep's price regardless; this is only the flag that
+                // says a manager should look at it.
+                IconColumn::make('has_price_variance')
+                    ->label('Price')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-exclamation-triangle')
+                    ->trueColor('warning')
+                    ->falseIcon('heroicon-o-check-circle')
+                    ->falseColor('gray')
+                    ->tooltip(fn (Order $record): ?string => $record->has_price_variance
+                        ? 'Captured offline against a price or product that has since changed. Review before approving.'
+                        : null),
 
                 TextColumn::make('status')
                     ->badge()
@@ -100,6 +117,9 @@ class OrdersTable
                     ->query(fn (Builder $query): Builder => $query->whereRaw(
                         'total_minor > (select coalesce(sum(amount_minor), 0) from order_payments where order_payments.order_id = orders.id)'
                     )),
+                Filter::make('price_variance')
+                    ->label('Price variance')
+                    ->query(fn (Builder $query): Builder => $query->where('has_price_variance', true)),
             ])
             ->recordActions([
                 EditAction::make(),

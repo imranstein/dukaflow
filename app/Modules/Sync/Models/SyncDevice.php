@@ -8,6 +8,7 @@ use App\Modules\Sync\Database\Factories\SyncDeviceFactory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 
 /**
@@ -34,6 +35,13 @@ class SyncDevice extends Model
      * The device behind an id, registering itself on first contact if this
      * is the first the server has heard of it. Called on every exchange, so
      * last_seen_at always reflects the truth without a separate heartbeat.
+     *
+     * Two requests from a device that has never registered before (the
+     * app-open sync and the online-event handler firing within the same
+     * moment, say) can both reach here believing it is new. `device_id` is
+     * unique at the database level, so the loser's insert throws rather
+     * than silently duplicating the row — caught here and turned into a
+     * plain re-fetch, because the row it wanted to create now exists.
      */
     public static function seenNow(string $deviceId, int $salesRepId, ?string $label = null): self
     {
@@ -45,7 +53,19 @@ class SyncDevice extends Model
             $device->label = $label;
         }
 
-        $device->save();
+        try {
+            $device->save();
+        } catch (QueryException) {
+            $device = self::query()->where('device_id', $deviceId)->firstOrFail();
+            $device->sales_rep_id = $salesRepId;
+            $device->last_seen_at = Carbon::now();
+
+            if ($label !== null) {
+                $device->label = $label;
+            }
+
+            $device->save();
+        }
 
         return $device;
     }

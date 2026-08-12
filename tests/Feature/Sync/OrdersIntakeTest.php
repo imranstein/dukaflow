@@ -9,6 +9,7 @@ use App\Modules\Distribution\Models\Customer;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Models\Order;
 use App\Support\Contracts\OrderIntake;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /*
@@ -74,6 +75,77 @@ it('flags an order whose captured price disagrees with the pricebook now', funct
     expect($result['has_price_variance'])->toBeTrue()
         ->and($order->has_price_variance)->toBeTrue()
         ->and($order->lines()->first()?->unit_price_minor)->toBe(4500);
+});
+
+it('checks the price as of when the order was placed, not as of now', function () {
+    // Two lists, back to back: A priced this at 50.00 and expired; B took
+    // over afterwards at a different price. A rep captures the order while
+    // A is still in force; the push happens after B has taken over.
+    $customer = Customer::factory()->create();
+    $product = Product::factory()->create();
+
+    $listA = PriceList::factory()->default()->create([
+        'currency' => 'ETB',
+        'effective_from' => '2026-01-01',
+        'effective_to' => '2026-01-10',
+    ]);
+    PriceListItem::factory()->for($listA, 'priceList')->pricedAt('50.00')->create(['product_id' => $product->id]);
+
+    $listB = PriceList::factory()->default()->create([
+        'currency' => 'ETB',
+        'effective_from' => '2026-01-11',
+        'effective_to' => null,
+    ]);
+    PriceListItem::factory()->for($listB, 'priceList')->pricedAt('65.00')->create(['product_id' => $product->id]);
+
+    Carbon::setTestNow('2026-02-01'); // the push happens well into B's reign
+
+    $result = app(OrderIntake::class)->submit(
+        clientId: (string) Str::ulid(),
+        customerId: $customer->id,
+        salesRepId: 7,
+        routeId: null,
+        placedAt: Carbon::parse('2026-01-05'), // captured while A was in force
+        currency: 'ETB',
+        lines: [
+            ['product_id' => $product->id, 'quantity' => 1, 'unit_price_minor' => 5000, 'price_list_id' => $listA->id],
+        ],
+    );
+
+    Carbon::setTestNow();
+
+    // Resolving against "now" would find list B at 65.00 and wrongly flag
+    // this. Resolving against placedAt finds list A, still at 50.00 —
+    // exactly what was captured, so no variance.
+    expect($result['has_price_variance'])->toBeFalse();
+});
+
+it('flags a variance when the product has been deactivated since capture', function () {
+    $customer = Customer::factory()->create();
+    $list = PriceList::factory()->default()->create(['currency' => 'ETB']);
+    $product = Product::factory()->create();
+    PriceListItem::factory()->for($list, 'priceList')->pricedAt('50.00')->create(['product_id' => $product->id]);
+
+    // Deactivated after the device pulled it, before the push arrived.
+    $product->update(['is_active' => false]);
+
+    $result = app(OrderIntake::class)->submit(
+        clientId: (string) Str::ulid(),
+        customerId: $customer->id,
+        salesRepId: 7,
+        routeId: null,
+        placedAt: now(),
+        currency: 'ETB',
+        lines: [
+            ['product_id' => $product->id, 'quantity' => 1, 'unit_price_minor' => 5000, 'price_list_id' => $list->id],
+        ],
+    );
+
+    $order = Order::query()->findOrFail($result['order_id']);
+
+    // Flagged for review, not rejected — the sale already happened.
+    expect($result['has_price_variance'])->toBeTrue()
+        ->and($order->lines()->count())->toBe(1);
 });
 
 it('flags a variance when nothing prices the product any more', function () {

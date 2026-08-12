@@ -31,6 +31,8 @@ That gives the push endpoint one rule, not two:
 
 `client_id` is the ULID from ADR-003; the uniqueness constraint on it is the backstop that makes this true even if the application logic above it has a bug.
 
+The entity write and the audit log row that makes it replayable happen in one transaction, not two statements in sequence. A strict review found the first implementation wrote them separately: a crash in the gap between them left an order that existed with no audit row to match it, so a retry of the same `client_id` hit the entity's own uniqueness constraint instead of finding a row to replay against — a permanently stuck submission, and the shape of thing that pushes a rep to just re-key the sale under a new id, which is the exact duplicate this design exists to prevent. One transaction closes the gap; a race between two requests for a genuinely new id is resolved after the fact by re-checking the audit log rather than trusting the first exception caught.
+
 ### 3. The conflict surface is deliberately narrow
 
 An order or visit outcome, once it has synced, becomes read-only from the device's side. Any correction after that point — the wrong item, a wrong quantity — happens in the back office, through the same guarded Order actions Phase 2 already built. Nothing on the device ever re-submits a change to an order that already exists server-side.
@@ -44,6 +46,8 @@ This one rule is what keeps "conflict" a small, well-defined case instead of a g
 **Deletions.** A delta pull can't see a row that no longer exists to be selected. Every entity that flows down already has, or gets, an `is_active` flag rather than a real delete path reachable from the sync contract: deactivating *is* the deletion, as far as a device is concerned, and a deactivated row still comes down on the next pull so the device can drop it locally. `Customer` keeps the hard-delete it already has for back-office cleanup (a duplicate entered twice the same morning, say) and the `ScopeRecordDeleted` event that announces it — that stays an internal, same-day admin operation. It is not something the sync protocol promises to reconcile against a device that has been offline for a week; a customer a manager actually needs to remove from every device gets deactivated, not deleted. Documented here as a deliberate, narrow gap rather than a silent one.
 
 **What pulls, specifically:** products, price lists' resolved effect (see §5, not the lists themselves), customers, routes, visit schedules. Each entity's "changes since" query is exposed by its owning module through a shared-kernel contract described in §7, the same shape as `ScopeDirectory`.
+
+**Scope, not just delta.** Customers, routes and visit schedules are additionally scoped to the requesting rep — a device pulls its own book, not the whole distributor's outlet list. (A strict review of the first implementation found this had been built delta-correct but not scope-correct: every rep's pull returned every rep's customers. Fixed by threading the resolved rep id into the feed contract itself, so an unscoped call is a compile-time impossibility, not a discipline every call site has to remember.) The same shape of gap as the deletion one above follows from it: a route reassigned away from a rep simply stops appearing in that rep's future pulls, rather than arriving once more with an explicit "no longer yours" signal, so a device that already cached it locally keeps a stale copy until told otherwise by some other means. Accepted for the same reason and at the same scale.
 
 ### 5. Pricing travels pre-resolved, not as rules to re-run
 
@@ -65,6 +69,8 @@ Sync writing an order means calling into Orders' `OrderWriter`, and Sync reading
 - **`SyncFeed`** (shared kernel, one per module that has something to pull): `changesSince(cursor): iterable`, returning primitives. Distribution, Catalog and Orders each register their feed into a `CompositeSyncFeed`, the same registration pattern `CompositeScopeDirectory` already established in Phase 1. Sync depends on the composite and never names another module.
 
 `ModuleBoundaryTest`'s table-owner map gets the new `Sync` module and its tables in the same commit that creates them — the test is doing its job if it fails before that, not misbehaving.
+
+A third contract followed once the design was actually exercised: **`RepDirectory`**, answering "which rep is this user" and "does this rep cover this customer." Every pushed order and visit outcome checks the second question before it is written — a device may only act for a customer on its own rep's route, checked server-side rather than trusted from a payload that already carries a cached (and, per §4, occasionally stale) copy of the rep's book.
 
 ### 8. Auth and transport
 

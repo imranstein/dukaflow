@@ -7,6 +7,7 @@ namespace App\Modules\Orders\Support;
 use App\Modules\Orders\Services\OrderWriter;
 use App\Support\Contracts\OrderIntake;
 use App\Support\Contracts\Pricebook;
+use App\Support\Contracts\ProductCatalogue;
 use App\Support\Money;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +22,7 @@ final readonly class OrdersIntake implements OrderIntake
     public function __construct(
         private OrderWriter $writer,
         private Pricebook $pricebook,
+        private ProductCatalogue $products,
     ) {}
 
     public function submit(
@@ -53,7 +55,15 @@ final readonly class OrdersIntake implements OrderIntake
                     priceListId: $line['price_list_id'],
                 );
 
-                if ($this->linePriceHasDrifted($line, $customerId, $routeId, $placedAt, $currency)) {
+                if ($this->linePriceHasDrifted($line, $customerId, $routeId, $placedAt, $currency)
+                    || $this->products->describe($line['product_id'])?->isActive !== true) {
+                    // Flagged, not rejected: the sale already happened, and
+                    // refusing it back into an error the device retries
+                    // forever is what pushes a rep to re-key it as a new
+                    // order — see Docs/adr/0002-offline-sync-strategy.md §5,
+                    // and the same reasoning that applies to a stale price
+                    // applies just as much to a product deactivated since
+                    // the device's last pull.
                     $hasVariance = true;
                 }
             }

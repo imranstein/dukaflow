@@ -25,7 +25,12 @@ interface SyncFeed
      * Up to $limit rows changed after $cursor, oldest first, each already
      * shaped for a device to store as-is.
      *
+     * $salesRepId scopes the answer to what that rep may see — a device
+     * pulling customers, routes or visit schedules gets its own rep's book,
+     * not the whole distributor's. A feed with nothing rep-specific to say
+     * (Catalog's products, shared distributor-wide) ignores it.
+     *
      * @return list<array{id: int, updated_at: string, data: array<string, mixed>}>
      */
-    public function pull(string $entityType, ?SyncCursor $cursor, int $limit): array;
+    public function pull(string $entityType, ?SyncCursor $cursor, int $limit, ?int $salesRepId): array;
 }

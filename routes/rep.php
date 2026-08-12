@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('web')->prefix('rep')->name('rep.')->group(function (): void {
     Route::get('login', [RepAuthController::class, 'create'])->middleware('guest')->name('login');
-    Route::post('login', [RepAuthController::class, 'store'])->middleware('guest')->name('login.store');
+    Route::post('login', [RepAuthController::class, 'store'])->middleware(['guest', 'throttle:5,1'])->name('login.store');
     Route::post('logout', [RepAuthController::class, 'destroy'])->middleware('auth')->name('logout');
 
     Route::middleware(['auth', 'rep'])->group(function (): void {

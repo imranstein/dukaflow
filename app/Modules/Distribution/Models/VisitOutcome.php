@@ -52,23 +52,32 @@ class VisitOutcome extends Model
     ];
 
     /**
-     * The one way one of these gets written. A plain create() would let a
-     * no-sale through with nothing explaining it, which is a call that never
-     * happened as far as a manager reviewing the round can tell.
+     * The intended way one of these gets written — kept as a clear entry
+     * point for callers, though the rule it guards lives in booted() below,
+     * not here, so nothing can bypass it by creating a model directly.
      *
      * @param  array<string, mixed>  $attributes
      */
     public static function record(array $attributes): self
     {
-        $outcome = $attributes['outcome'] instanceof VisitOutcomeType
-            ? $attributes['outcome']
-            : VisitOutcomeType::from((string) $attributes['outcome']);
-
-        if ($outcome->requiresReason() && empty($attributes['reason'])) {
-            throw VisitOutcomeException::reasonRequired();
-        }
-
         return self::query()->create($attributes);
+    }
+
+    /**
+     * A no-sale with nothing explaining it is a call that never happened as
+     * far as a manager reviewing the round can tell. Enforced here, not
+     * only in record(), because a review found the rule was a matter of
+     * every caller's good behaviour rather than something the model itself
+     * stood behind — a future Filament resource, a data-fix script, or a
+     * factory bypassing record() would have gone straight through.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (self $outcome): void {
+            if ($outcome->outcome->requiresReason() && empty($outcome->reason)) {
+                throw VisitOutcomeException::reasonRequired();
+            }
+        });
     }
 
     /** @return BelongsTo<Customer, $this> */

@@ -39,9 +39,9 @@ final class CompositeSyncFeed implements SyncFeed
     }
 
     /** @return list<array{id: int, updated_at: string, data: array<string, mixed>}> */
-    public function pull(string $entityType, ?SyncCursor $cursor, int $limit): array
+    public function pull(string $entityType, ?SyncCursor $cursor, int $limit, ?int $salesRepId): array
     {
-        return $this->feedFor($entityType)?->pull($entityType, $cursor, $limit) ?? [];
+        return $this->feedFor($entityType)?->pull($entityType, $cursor, $limit, $salesRepId) ?? [];
     }
 
     private function feedFor(string $entityType): ?SyncFeed

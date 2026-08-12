@@ -16,7 +16,13 @@
 // transaction (a fetch, a timer) lets IndexedDB auto-commit it under you,
 // which is the standard footgun this file exists to avoid.
 
-const DB_NAME = 'dukaflow-rep';
+// Namespaced per rep, not just per origin. A shared device (a company
+// tablet handed between reps at shift change) must not let Rep B's login
+// drain Rep A's still-queued, not-yet-synced captures into Rep B's session —
+// found by a strict review of this exact scenario. Each rep gets an
+// isolated local database; Rep A's queue is simply invisible until Rep A
+// logs back in, not lost and not reattributed.
+const DB_NAME = `dukaflow-rep-${window.DUKAFLOW_REP?.id ?? 'anonymous'}`;
 const DB_VERSION = 1;
 
 let dbPromise = null;

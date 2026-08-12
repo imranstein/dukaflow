@@ -12,8 +12,16 @@ use App\Support\SyncCursor;
 
 /**
  * Distribution's answer to a device's pull: the outlets a rep calls on,
- * the routes they sit on, and which days they're due. See
+ * the routes they sit on, and which days they're due — scoped to that one
+ * rep's own book, not the whole distributor's. See
  * Docs/adr/0002-offline-sync-strategy.md §4.
+ *
+ * Known gap, accepted for v1: a route reassigned away from a rep simply
+ * stops appearing in that rep's future pulls, rather than arriving once
+ * more with an explicit "no longer yours" signal. A device already holding
+ * it locally keeps a stale copy until told otherwise by some other means —
+ * the same shape of gap ADR-002 §4 already accepts for a hard-deleted
+ * customer, and acceptable at the same scale for the same reason.
  */
 final class DistributionSyncFeed implements SyncFeed
 {
@@ -24,20 +32,28 @@ final class DistributionSyncFeed implements SyncFeed
     }
 
     /** @return list<array{id: int, updated_at: string, data: array<string, mixed>}> */
-    public function pull(string $entityType, ?SyncCursor $cursor, int $limit): array
+    public function pull(string $entityType, ?SyncCursor $cursor, int $limit, ?int $salesRepId): array
     {
+        // Fails closed: no rep resolved means no scope to answer for, not
+        // "everyone's."
+        if ($salesRepId === null) {
+            return [];
+        }
+
         return match ($entityType) {
-            'customer' => $this->customers($cursor, $limit),
-            'route' => $this->routes($cursor, $limit),
-            'visit_schedule' => $this->visitSchedules($cursor, $limit),
+            'customer' => $this->customers($cursor, $limit, $salesRepId),
+            'route' => $this->routes($cursor, $limit, $salesRepId),
+            'visit_schedule' => $this->visitSchedules($cursor, $limit, $salesRepId),
             default => [],
         };
     }
 
     /** @return list<array{id: int, updated_at: string, data: array<string, mixed>}> */
-    private function customers(?SyncCursor $cursor, int $limit): array
+    private function customers(?SyncCursor $cursor, int $limit, int $salesRepId): array
     {
-        return SyncCursor::apply(Customer::query(), $cursor)
+        $routeIds = $this->routeIdsFor($salesRepId);
+
+        return SyncCursor::apply(Customer::query()->whereIn('route_id', $routeIds), $cursor)
             ->limit($limit)
             ->get()
             ->map(fn (Customer $customer): array => [
@@ -63,9 +79,9 @@ final class DistributionSyncFeed implements SyncFeed
     }
 
     /** @return list<array{id: int, updated_at: string, data: array<string, mixed>}> */
-    private function routes(?SyncCursor $cursor, int $limit): array
+    private function routes(?SyncCursor $cursor, int $limit, int $salesRepId): array
     {
-        return SyncCursor::apply(Route::query(), $cursor)
+        return SyncCursor::apply(Route::query()->where('sales_rep_id', $salesRepId), $cursor)
             ->limit($limit)
             ->get()
             ->map(fn (Route $route): array => [
@@ -82,9 +98,12 @@ final class DistributionSyncFeed implements SyncFeed
     }
 
     /** @return list<array{id: int, updated_at: string, data: array<string, mixed>}> */
-    private function visitSchedules(?SyncCursor $cursor, int $limit): array
+    private function visitSchedules(?SyncCursor $cursor, int $limit, int $salesRepId): array
     {
-        return SyncCursor::apply(VisitSchedule::query(), $cursor)
+        $routeIds = $this->routeIdsFor($salesRepId);
+        $customerIds = Customer::query()->whereIn('route_id', $routeIds)->pluck('id');
+
+        return SyncCursor::apply(VisitSchedule::query()->whereIn('customer_id', $customerIds), $cursor)
             ->limit($limit)
             ->get()
             ->map(fn (VisitSchedule $schedule): array => [
@@ -98,5 +117,11 @@ final class DistributionSyncFeed implements SyncFeed
                 ],
             ])
             ->all();
+    }
+
+    /** @return list<int> */
+    private function routeIdsFor(int $salesRepId): array
+    {
+        return Route::query()->where('sales_rep_id', $salesRepId)->pluck('id')->all();
     }
 }

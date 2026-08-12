@@ -7,7 +7,10 @@ import { ulid } from './ulid';
 
 const ENTITY_TYPES = ['product', 'customer', 'route', 'visit_schedule'];
 const PULL_LIMIT = 500;
-const MAX_ATTEMPTS_BEFORE_BACKOFF_CAP = 6;
+// 2**9 = 512, the first power of two past the 300s (5 minute) cap below —
+// anything lower and the cap in backoffSeconds() is unreachable dead code,
+// which is exactly the bug a strict review found here.
+const MAX_ATTEMPTS_BEFORE_BACKOFF_CAP = 9;
 const PUSH_BATCH_SIZE = 50; // matches PushSyncRequest's entities max:50
 
 function csrfToken() {

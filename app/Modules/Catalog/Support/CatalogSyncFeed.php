@@ -22,8 +22,13 @@ final class CatalogSyncFeed implements SyncFeed
         return ['product'];
     }
 
-    /** @return list<array{id: int, updated_at: string, data: array<string, mixed>}> */
-    public function pull(string $entityType, ?SyncCursor $cursor, int $limit): array
+    /**
+     * $salesRepId is unused: the catalogue is shared distributor-wide, not
+     * rep-specific, so nothing here needs scoping by who is asking.
+     *
+     * @return list<array{id: int, updated_at: string, data: array<string, mixed>}>
+     */
+    public function pull(string $entityType, ?SyncCursor $cursor, int $limit, ?int $salesRepId): array
     {
         if ($entityType !== 'product') {
             return [];

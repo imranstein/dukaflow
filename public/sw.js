@@ -48,8 +48,16 @@ self.addEventListener('fetch', (event) => {
 async function networkFirst(request) {
     try {
         const response = await fetch(request);
-        const cache = await caches.open(CACHE_VERSION);
-        cache.put(request, response.clone());
+
+        // fetch() only rejects on a network failure, not an HTTP error — a
+        // transient 500 mid-deploy must not overwrite the last known-good
+        // shell in the cache, or losing signal right after serves the 500
+        // forever instead of the working offline page.
+        if (response.ok) {
+            const cache = await caches.open(CACHE_VERSION);
+            cache.put(request, response.clone());
+        }
+
         return response;
     } catch (error) {
         const cached = await caches.match(request);
@@ -64,7 +72,13 @@ async function cacheFirst(request) {
     }
 
     const response = await fetch(request);
-    const cache = await caches.open(CACHE_VERSION);
-    cache.put(request, response.clone());
+
+    // Same reasoning as networkFirst: never let a 404/502 on a hashed
+    // asset's first fetch become the permanent cached answer for it.
+    if (response.ok) {
+        const cache = await caches.open(CACHE_VERSION);
+        cache.put(request, response.clone());
+    }
+
     return response;
 }

@@ -35,7 +35,7 @@ final readonly class RepPricebook
             return [];
         }
 
-        $customerRoutes = $this->activeCustomerRoutes($routeIds);
+        $customerRoutes = $this->activeCustomerRoutes($routeIds, $salesRepId);
         $productIds = $this->activeProductIds();
 
         $prices = [];
@@ -64,7 +64,7 @@ final readonly class RepPricebook
     /** @return list<int> */
     private function routeIdsFor(int $salesRepId): array
     {
-        return $this->rows('route')
+        return $this->rows('route', $salesRepId)
             ->filter(fn (array $row): bool => ($row['data']['sales_rep_id'] ?? null) === $salesRepId
                 && ($row['data']['is_active'] ?? false))
             ->pluck('id')
@@ -75,9 +75,9 @@ final readonly class RepPricebook
      * @param  list<int>  $routeIds
      * @return Collection<int, int> customer id => route id
      */
-    private function activeCustomerRoutes(array $routeIds): Collection
+    private function activeCustomerRoutes(array $routeIds, int $salesRepId): Collection
     {
-        return $this->rows('customer')
+        return $this->rows('customer', $salesRepId)
             ->filter(fn (array $row): bool => in_array($row['data']['route_id'] ?? null, $routeIds, true)
                 && ($row['data']['is_active'] ?? false))
             ->mapWithKeys(fn (array $row): array => [$row['id'] => $row['data']['route_id']]);
@@ -86,15 +86,22 @@ final readonly class RepPricebook
     /** @return list<int> */
     private function activeProductIds(): array
     {
-        return $this->rows('product')
+        return $this->rows('product', null)
             ->filter(fn (array $row): bool => $row['data']['is_active'] ?? false)
             ->pluck('id')
             ->all();
     }
 
-    /** @return Collection<int, array{id: int, updated_at: string, data: array<string, mixed>}> */
-    private function rows(string $entityType): Collection
+    /**
+     * The feed is already scoped by $salesRepId (Docs/adr/0002-offline-sync-strategy.md
+     * §4/§7); the filtering above stays anyway as a second, cheap check —
+     * one place getting the scoping wrong should not be the only thing
+     * standing between a rep and another rep's customer list.
+     *
+     * @return Collection<int, array{id: int, updated_at: string, data: array<string, mixed>}>
+     */
+    private function rows(string $entityType, ?int $salesRepId): Collection
     {
-        return collect($this->feed->pull($entityType, null, self::FEED_PAGE));
+        return collect($this->feed->pull($entityType, null, self::FEED_PAGE, $salesRepId));
     }
 }
