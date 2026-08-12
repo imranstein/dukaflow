@@ -95,3 +95,20 @@ Twenty-one candidate findings across five review dimensions, all twenty-one inde
 Tagged `v0.4.0-beta`.
 
 **Next**: Phase 4, polish and launch readiness.
+
+## 2026-08-12 — Phase 4, polish and launch readiness
+
+- **Docs**: an architecture overview with a diagram of the module/shared-kernel shape, a domain glossary, and a sync deep dive — the last one narrative rather than a decision record, with a sequence diagram of a full pull-then-push cycle, meant to be the one document that explains the whole offline story without reading six ADRs first.
+- **README rewritten** as the actual portfolio page: badges, a feature tour in prose (screenshot capture through the browser tool turned out not to persist an actual image file to disk, only an inline view — noted rather than faked, and not worth chasing further given the docs already describe what things look like in enough detail), an updated status section, a quickstart that now also covers the frontend build the rep PWA needs.
+- **CONTRIBUTING.md, CODE_OF_CONDUCT.md** (Contributor Covenant 2.1), issue and PR templates, **CHANGELOG.md** reconstructed from the tag history.
+- **Production Docker setup**: `docker/Dockerfile` (three stages — composer, the frontend build, then a combined nginx + php-fpm runtime image), `docker/nginx.conf`, `docker/entrypoint.sh` (migrate, never migrate:fresh — this runs against a self-hoster's real data), `docker-compose.prod.yml`, `docker/README.md`. Deliberately not the same as `compose.yaml` (Sail), which is dev-only and bind-mounts the repo.
+
+### What actually verifying it found
+
+A full multi-stage build hit a disk-space wall on the machine this ran on — unrelated to the Dockerfile, confirmed by checking host disk space directly. Rather than ship an unverified Dockerfile on the strength of that, each stage got checked in isolation instead: the frontend build stage runs and produces the right output (confirmed byte-identical asset names to a normal local build), and the runtime stage's package installation was run standalone, which is what actually caught a real bug — `apk del icu-dev` (the standard "install dev headers, build the extension, delete the dev headers" pattern) silently removes `icu-libs` along with it on this base image, since nothing else references it, and `intl` fails to load at runtime with a missing `libicuio.so`. The common pattern doesn't hold universally; testing it beat trusting it. Fixed by re-adding `icu-libs` by name after the delete. Also removed two apk packages (`libzip-dev`, `oniguruma-dev`) and one `docker-php-ext-install` call (`opcache`) that turned out to be unnecessary — checked against the base image's actual bundled extension list rather than assumed.
+
+### The live demo
+
+Asked directly: Fly.io, Railway, an existing VPS, or skip for now. The answer was to skip it — correctly a call for a human, since it means an account, possibly a domain, possibly money, none of which gets decided or spent unprompted. Everything else in SOURCE_OF_TRUTH §9's definition of done for `v1.0.0` is met; the live demo is the one line item still open, so `v1.0.0` stays untagged until it lands. `docker-compose.prod.yml` is sitting ready for whenever that happens.
+
+**Next**: whichever comes first — the live demo, or a decision to tag `v1.0.0` without it.

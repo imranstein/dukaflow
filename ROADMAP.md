@@ -47,9 +47,11 @@ The centrepiece, and the reason the project exists.
 - [x] Price-variance flagging when a captured price disagrees with the pricebook at push time
 - [x] CI builds and checks the PWA's frontend on every push
 
-## Phase 4 — Polish and launch
+## Phase 4 — Polish and launch (in progress)
 
-- [ ] Architecture docs, domain glossary, sync deep dive, screenshots
-- [ ] Contribution files, changelog
-- [ ] Live demo with nightly seed reset
-- [ ] v1.0.0
+- [x] Architecture overview, domain glossary, sync deep dive
+- [x] README rewritten as the portfolio page: badges, feature tour, updated status
+- [x] CONTRIBUTING.md, CODE_OF_CONDUCT.md, issue and PR templates, CHANGELOG.md
+- [x] Production Docker setup for self-hosters (`docker/`, `docker-compose.prod.yml`) — separate from the Sail dev setup, verified to build and run its extensions correctly
+- [ ] Live demo with nightly seed reset — deliberately deferred; picking a host and paying for it is a call for whoever's running this project, not something to do unprompted. `docker-compose.prod.yml` is ready whenever that happens.
+- [ ] `v1.0.0` — held until the live demo lands, since [SOURCE_OF_TRUTH.md](Docs/SOURCE_OF_TRUTH.md) §9 names it as part of the definition of done. Everything else in that list is already true.
