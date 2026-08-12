@@ -36,14 +36,16 @@ Everything an admin needs to describe the business before an order can exist.
 - [x] ADR-005 on the order lifecycle, ADR-006 on the ledger
 - [x] CI runs the suite against MySQL as well as SQLite
 
-## Phase 3 — Rep PWA and offline sync
+## Phase 3 — Rep PWA and offline sync ✅
 
 The centrepiece, and the reason the project exists.
 
-- [ ] ADR-002 on the sync strategy, written before the code
-- [ ] Idempotent sync API with cursor-based delta pulls and explicit conflict flagging
-- [ ] Rep PWA: today's route, visit flow, offline order capture, sync status
-- [ ] Service worker, local storage layer, upload queue with retry
+- [x] ADR-002 on the sync strategy, written before the code, and ADR-003 on the id strategy
+- [x] Idempotent sync API with cursor-based delta pulls, a pre-resolved per-rep pricebook, and explicit conflict flagging
+- [x] Rep PWA: today's route, visit flow, offline order capture, no-sale outcomes, sync status
+- [x] Hand-written service worker, IndexedDB storage layer, upload queue with retry and backoff — no sync/offline package
+- [x] Price-variance flagging when a captured price disagrees with the pricebook at push time
+- [x] CI builds and checks the PWA's frontend on every push
 
 ## Phase 4 — Polish and launch
 
