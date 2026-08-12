@@ -68,3 +68,30 @@ Every one is now pinned by a test named after the case.
 **Lesson for next time**: constrain review agents to read-only. The Phase 1 review mutated production code to test whether the suite would catch it — it deleted a `where()` clause from the price resolver and injected a method into an enum — and left nine scratch test files behind, one of which reached a commit. The Phase 2 review ran with an explicit read-only contract and the `Explore` agent type, and left nothing behind while still finding six real bugs by reading alone.
 
 **Next**: Phase 3, the rep PWA and offline sync.
+
+## 2026-08-12 — Phase 3, the rep PWA and offline sync
+
+- **ADR-002 and ADR-003 first**, as the project's own rules require. ADR-002 settles idempotency (the audit log doubles as the idempotency store), the deliberately narrow conflict surface (an order is read-only from the device once synced, so the only conflict is an id reused for different content), the delta-pull cursor and its deletion story, pre-resolved per-rep pricing instead of shipping resolver rules to a device, and session-cookie auth over a new API guard. ADR-003 settles the id question: `orders`/`visit_outcomes` keep their bigint primary keys and gain a nullable `client_id` ULID column, rather than rekeying two phases of working code.
+- **`App\Modules\Sync`**: idempotent push for orders and visit outcomes, cursor-based delta pull, a per-rep pre-resolved pricebook, price-variance flagging when a captured price disagrees with the pricebook at push time. Two new shared-kernel contracts, `OrderIntake` and `VisitOutcomeIntake`, so Sync never touches Orders' or Distribution's models directly — same shape as `Pricebook` and `ScopeDirectory` before it.
+- **The PWA at `/rep`**: its own login separate from the back office's, a hand-written service worker, an IndexedDB layer, and an Alpine.js capture flow that makes zero server round-trips per interaction — today's route, a visit, an order or a no-sale outcome, all working entirely off what was last pulled. An upload queue drains on reconnect with retry and backoff. No sync or offline package anywhere in it, per the stack rule.
+- Verified by hand in the browser, not just by the suite: logged in as a rep, watched the round pull from the server, captured an order and a no-sale outcome, watched them sync, confirmed a repeat sync didn't duplicate anything.
+- CI now builds and checks the frontend on every push — the first phase with real frontend tooling in it.
+
+### What the review pass found
+
+Twenty-one candidate findings across five review dimensions, all twenty-one independently confirmed by a second, skeptical pass reading the code fresh. Two were the same defect found twice from different angles, so nineteen distinct fixes:
+
+- **The big one**: the sync pull endpoint answered every rep with every customer, route and visit schedule in the whole distributor, not just their own round. The delta-cursor logic was correct; the scoping was simply never applied. Fixed by threading the resolved rep id into the `SyncFeed` contract itself, so an unscoped call is no longer possible to write by accident.
+- **A duplicate-order risk**: the entity write and the audit-log row that makes a push replayable were two separate statements, not one transaction. A crash between them left an order that existed with no way to replay its id — the device's retry would hit the order's own uniqueness constraint and fail forever, which is exactly the kind of stuck submission that pushes a rep to re-key the sale under a new id. Now one transaction.
+- **A shared-device bug**: the offline queue lived in one fixed IndexedDB database per browser, not per rep. A company tablet handed from one rep to another mid-shift would silently push the first rep's still-queued sale under the second rep's identity on next sync. Fixed by namespacing the database per rep id — confirmed in the browser with two logins on one session.
+- A device could push an order for any customer id, not just one on its own rep's route — closed with an ownership check backed by a new `RepDirectory::ownsCustomer()`.
+- A malformed entity's JSON encoding failure crashed the whole push batch instead of failing just that one entity; a malformed pull cursor 500'd instead of a clean 422; a first-contact device-registration race could do the same. All three now fail in isolation.
+- `has_price_variance` was computed correctly and never shown anywhere — a real safety net with no human on the other end of it. Now a badge and a filter on the orders table.
+- `addCapturedLine` skipped the active-product check `addLine` enforces; a product deactivated between a device's last pull and its next push went through silently. Folded into the same variance flag rather than hard-rejecting, since rejecting a sale that already happened is what causes duplicate re-keying in the first place.
+- A no-sale's reason-required rule lived only in a named constructor; a model-level guard now makes it impossible to bypass by any creation path.
+- Two gaps in the test suite: nothing proved the price-variance check compared against the order's `placed_at` rather than the current moment, and nothing proved two distinct offline orders in one reconnect both survive as two separate rows — the phase's own acceptance line. Both are tests now.
+- One finding was read and deliberately left alone: a device can silently reassign to a different rep on login, which is a device-tracking detail with no bearing on authorization (every push and pull already resolves the acting rep from the session, never from the device row) — worth knowing, not worth the added complexity of refusing it.
+
+Tagged `v0.4.0-beta`.
+
+**Next**: Phase 4, polish and launch readiness.
