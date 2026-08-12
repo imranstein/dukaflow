@@ -4,9 +4,16 @@
 
 FROM composer:2 AS composer-deps
 WORKDIR /app
+# filament/support requires ext-intl, which composer's own image doesn't
+# ship — composer install fails its platform check without this, confirmed
+# by actually running it against this lock file, not assumed from a
+# changelog. install-php-extensions is composer:2's own bundled installer.
+RUN install-php-extensions intl
 COPY composer.json composer.lock ./
 # No scripts yet: artisan isn't present until the full source is copied, and
-# composer's post-install hooks call it.
+# composer's post-install hooks (package:discover, filament:upgrade) call
+# it — they need intl loaded too, which is the other reason to actually
+# install the extension here rather than just ignore the platform check.
 RUN composer install --no-dev --no-interaction --no-progress --no-scripts --optimize-autoloader
 COPY . .
 RUN composer install --no-dev --no-interaction --no-progress --optimize-autoloader
@@ -42,6 +49,18 @@ RUN apk add --no-cache icu-dev nginx \
     && docker-php-ext-install -j"$(nproc)" pdo_mysql bcmath intl \
     && apk del icu-dev \
     && apk add --no-cache icu-libs
+
+# The image otherwise runs on PHP's built-in defaults — no php.ini at all,
+# only the -development/-production templates the base image ships but
+# never activates. This picks the production one, then raises the upload
+# limit to match nginx.conf's client_max_body_size so the two agree; nothing
+# uploads files today, but a mismatched pair of limits is a surprise for
+# whenever something does.
+RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
+    && sed -i \
+        -e 's/^upload_max_filesize = .*/upload_max_filesize = 20M/' \
+        -e 's/^post_max_size = .*/post_max_size = 20M/' \
+        "$PHP_INI_DIR/php.ini"
 
 # Boring, standard opcache settings for a single-app container — no
 # hot-reload watching, since nothing in a built image changes at runtime.

@@ -10,6 +10,11 @@ Phase 4: polish and launch readiness, toward `v1.0.0`.
 - Architecture overview, domain glossary, and a sync deep dive under `Docs/`.
 - `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, issue and PR templates.
 - This changelog.
+- A production Docker setup for self-hosters: `docker/Dockerfile`, `docker/nginx.conf`, `docker/entrypoint.sh`, `docker-compose.prod.yml`. CI now builds the image on every push.
+- Env-driven trusted-proxy support (`TRUSTED_PROXIES`) for running behind a reverse proxy.
+
+### Fixed
+- A review of the new Docker setup caught a real build blocker (the composer stage failing on a missing `ext-intl`) and several production-readiness gaps — unguarded `APP_KEY`/`DB_PASSWORD`, no trusted-proxy config, a root/www-data file-ownership edge case in the entrypoint. All closed.
 
 ## [v0.4.0-beta] — 2026-08-12
 

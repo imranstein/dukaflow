@@ -10,4 +10,10 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
+# Everything above runs as root; php-fpm's workers run as www-data. A file
+# any of those commands touched for the first time — storage/logs/laravel.log
+# on a startup warning, a fresh view cache entry — would otherwise be
+# root-owned, and every later www-data write to it fails.
+chown -R www-data:www-data storage bootstrap/cache
+
 exec "$@"

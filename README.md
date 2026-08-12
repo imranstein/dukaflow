@@ -8,7 +8,7 @@
 
 Order management for small FMCG distributors, built in Laravel. The interesting part is offline sync: field reps in emerging markets work in places where mobile data drops constantly, so the rep app is a PWA that keeps working without a connection and syncs when one comes back — hand-built, no sync or offline package anywhere in it.
 
-**Live demo:** coming with the Phase 4 deployment — see [ROADMAP.md](ROADMAP.md). Everything below runs locally in the meantime.
+**Live demo:** not yet — deliberately deferred, see [ROADMAP.md](ROADMAP.md). Everything below runs locally in the meantime, and `docker/` has a production-ready setup for anyone who wants to host it themselves sooner.
 
 ## Status
 
@@ -64,7 +64,7 @@ The app is on http://localhost:8080. A MySQL 8.4 container comes up alongside it
 - **Back office** (Filament): products, price lists with effective dates and precedence rules, outlets, sales reps, routes, visit schedules — a distributor can be fully set up from the UI alone.
 - **Orders**: a real lifecycle (draft → submitted → approved → fulfilled, or cancelled), each transition guarded rather than silently failing. Lines snapshot the product's price and details at the moment of sale, so a later catalogue edit never rewrites old paperwork. Cash and credit payments, deliberately nothing more — no payment gateways.
 - **Van stock**: an append-only stock ledger — a balance is the sum of every movement, never a column that gets edited. Load stock onto a rep in the morning, sell against it during the day, reconcile the van at night; a reconciliation compares the count against the live ledger and writes the adjustment for whatever doesn't match.
-- **The rep PWA**: today's route, a visit flow, offline order capture, no-sale outcomes with a reason, a sync status indicator, a manual sync button. Built from a hand-written service worker, IndexedDB, and Alpine.js — no server round-trip per interaction, because a component that needs one is a brick the moment signal drops.
+- **The rep PWA**: today's route, a visit flow, offline order capture, no-sale outcomes with a reason, a sync status indicator, a manual sync button. Built from a hand-written service worker, IndexedDB, and Alpine.js — no server round-trip per interaction, since there's frequently no server to reach.
 - **Offline sync**: idempotent — resubmitting the same order is a no-op that returns the original result, never a duplicate. Genuine conflicts (the same id reused for different content) are flagged for a human, never silently merged. Prices sync pre-resolved per rep rather than shipping the pricing rules to the device to re-run.
 - **Dashboards**: orders by route and rep, stock position, reconciliation variances.
 
@@ -82,7 +82,7 @@ Where modules genuinely need each other, they go through an interface in the sha
 
 Money is never a float. Prices are integer minor units inside a `Money` value object, for the reasons in [ADR-004](Docs/adr/0004-money-handling.md).
 
-Stack: Laravel 13, Livewire 4, Filament 5, Tailwind, Alpine. Pest for tests, Larastan at level 6 and Pint for formatting, all three gating CI, on both SQLite and MySQL. [Docs/glossary.md](Docs/glossary.md) has the domain vocabulary if any of the naming is unfamiliar.
+Stack: Laravel 13, Livewire 4, Filament 5, Tailwind, Alpine. Pest for tests, Larastan at level 6 and Pint for formatting, all three gating CI — Pest runs against SQLite and MySQL both, since the stock ledger's invariants are exactly where the two diverge. [Docs/glossary.md](Docs/glossary.md) has the domain vocabulary if any of the naming is unfamiliar.
 
 ## Development
 
@@ -92,7 +92,7 @@ Stack: Laravel 13, Livewire 4, Filament 5, Tailwind, Alpine. Pest for tests, Lar
 ./vendor/bin/pest          # tests
 ```
 
-CI runs all three, on both databases, plus a frontend build check, on every push. They have to be green before a phase is considered done. [CONTRIBUTING.md](CONTRIBUTING.md) has the rest of the working conventions if you're looking to send a change.
+CI runs all three (Pest on both databases), a frontend build, and a full Docker image build, on every push. They have to be green before a phase is considered done. [CONTRIBUTING.md](CONTRIBUTING.md) has the rest of the working conventions if you're looking to send a change.
 
 ## License
 

@@ -50,6 +50,23 @@ jobs:
       - name: Build the rep PWA's frontend
         run: npm run build
 
+  docker-build:
+    # Proves docker/Dockerfile actually produces an image, not just that it
+    # reads plausibly. Added after a review caught a platform-check failure
+    # (filament/support needs ext-intl, composer:2's image doesn't ship it)
+    # that a local build never got far enough to hit, and a fix for it that
+    # a disk-constrained local machine couldn't fully re-verify either — a
+    # runner with real disk space closes that gap permanently instead of
+    # relying on it having been checked by hand once.
+    name: Build the production image
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build
+        run: docker build -f docker/Dockerfile -t dukaflow:ci .
+
   tests:
     # SQLite is what the suite runs on day to day because it is instant, but
     # MySQL is the production target and enforces things SQLite does not:

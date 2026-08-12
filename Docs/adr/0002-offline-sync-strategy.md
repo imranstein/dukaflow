@@ -90,7 +90,7 @@ Named here so a gap found later reads as a decision, not an oversight:
 
 - Line-level or partial-order sync — §7's `OrderIntake` takes a whole order.
 - Any merge of a genuinely two-sided edit — ruled out entirely by §3.
-- The Background Sync API as the *only* trigger — it's Chromium-only. The queue flushes on app open, on the browser's `online` event, on a periodic timer while the app is open, and on the manual button the phase's own acceptance criterion already requires. Background Sync, where present, is a bonus on top of those, not the mechanism itself.
+- The Background Sync API, full stop — it's Chromium-only, and nothing here registers for it. The queue flushes on app open, on the browser's `online` event, on a periodic timer while the app is open, and on the manual button the phase's own acceptance criterion already requires — four triggers covering the same moments Background Sync would, on every browser rather than some.
 - Any packaged sync/offline library (Workbox, vite-plugin-pwa, Sanctum). The service worker, the manifest and the IndexedDB layer are hand-written, per source of truth §8.
 
 ## Consequences

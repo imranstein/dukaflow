@@ -22,6 +22,18 @@ return Application::configure(basePath: dirname(__DIR__))
         // Filament's own auth, and the rep interface has its own front door
         // at rep.login. Nothing else currently reaches this fallback.
         $middleware->redirectGuestsTo(fn (Request $request): string => route('rep.login'));
+
+        // Trusts nothing by default. A self-hoster running behind a reverse
+        // proxy that terminates TLS (see docker/README.md) sets
+        // TRUSTED_PROXIES to the proxy's address, or '*' when the app
+        // container is reachable only through it — without this, Laravel
+        // sees plain HTTP from the proxy and generates http:// asset and
+        // redirect URLs on what the browser sees as an https:// page.
+        $proxies = env('TRUSTED_PROXIES');
+
+        if (is_string($proxies) && $proxies !== '') {
+            $middleware->trustProxies(at: $proxies === '*' ? '*' : explode(',', $proxies));
+        }
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

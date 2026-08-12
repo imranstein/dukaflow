@@ -88,7 +88,7 @@ Two domain events cross module lines the same way: `OrderFulfilled` (Orders anno
 
 ## The rep PWA
 
-`/rep` is not a module — it lives at the app level (`app/Http/Controllers/Rep`), the same way the cross-module Filament dashboard widgets do, because reading across Distribution, Catalog and Orders is exactly the kind of knowledge a module is not allowed to hold. It renders once, then hands off entirely to a hand-written service worker, an IndexedDB layer, and an Alpine.js capture flow — no server round-trip per interaction, because a Livewire component is a brick the moment the network drops. The full design, including why that had to be true, is in the [sync deep dive](sync-deep-dive.md).
+`/rep` is not a module — it lives at the app level (`app/Http/Controllers/Rep`), the same way the cross-module Filament dashboard widgets do, because reading across Distribution, Catalog and Orders is exactly the kind of knowledge a module is not allowed to hold. It renders once, then hands off entirely to a hand-written service worker, an IndexedDB layer, and an Alpine.js capture flow — nothing on that path waits on a server, because for long stretches of a rep's day there isn't one to wait on. The full design, including why that had to be true, is in the [sync deep dive](sync-deep-dive.md).
 
 ## Quality gates
 

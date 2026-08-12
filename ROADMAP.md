@@ -52,6 +52,7 @@ The centrepiece, and the reason the project exists.
 - [x] Architecture overview, domain glossary, sync deep dive
 - [x] README rewritten as the portfolio page: badges, feature tour, updated status
 - [x] CONTRIBUTING.md, CODE_OF_CONDUCT.md, issue and PR templates, CHANGELOG.md
-- [x] Production Docker setup for self-hosters (`docker/`, `docker-compose.prod.yml`) — separate from the Sail dev setup, verified to build and run its extensions correctly
+- [x] Production Docker setup for self-hosters (`docker/`, `docker-compose.prod.yml`) — separate from the Sail dev setup. A review caught a real build-blocker (the composer stage failing on a missing `ext-intl`, since `filament/support` needs it and composer's own image doesn't ship it) and several production-readiness gaps (`APP_KEY`/`DB_PASSWORD` unguarded, no trusted-proxy config behind a reverse proxy, a root/www-data file-ownership edge case). All fixed. CI now builds the image on every push — the actual, durable proof this works, rather than a one-off local check.
+- [ ] Screenshots — dropped; the browser tooling used to capture them didn't produce a savable file. Not a blocker, just genuinely not done.
 - [ ] Live demo with nightly seed reset — deliberately deferred; picking a host and paying for it is a call for whoever's running this project, not something to do unprompted. `docker-compose.prod.yml` is ready whenever that happens.
-- [ ] `v1.0.0` — held until the live demo lands, since [SOURCE_OF_TRUTH.md](Docs/SOURCE_OF_TRUTH.md) §9 names it as part of the definition of done. Everything else in that list is already true.
+- [ ] `v1.0.0` — held until the live demo lands, since [SOURCE_OF_TRUTH.md](Docs/SOURCE_OF_TRUTH.md) §9 names it as part of the definition of done.
