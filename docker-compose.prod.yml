@@ -1,0 +1,61 @@
+# A production-ish stack for self-hosters. Not what CI or local dev uses —
+# see compose.yaml (Sail) for that. Two services: the app (nginx + php-fpm
+# in one container, built from docker/Dockerfile) and MySQL.
+#
+# Usage:
+#   cp .env.example .env.production, fill in real values, then:
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# See docker/README.md for the full walkthrough.
+
+services:
+    app:
+        build:
+            context: .
+            dockerfile: docker/Dockerfile
+        image: dukaflow:latest
+        restart: unless-stopped
+        ports:
+            - '${APP_PORT:-8000}:80'
+        environment:
+            APP_ENV: production
+            APP_DEBUG: 'false'
+            APP_KEY: '${APP_KEY}'
+            APP_URL: '${APP_URL}'
+            DB_CONNECTION: mysql
+            DB_HOST: mysql
+            DB_PORT: 3306
+            DB_DATABASE: '${DB_DATABASE:-dukaflow}'
+            DB_USERNAME: '${DB_USERNAME:-dukaflow}'
+            DB_PASSWORD: '${DB_PASSWORD}'
+            SESSION_DRIVER: database
+            SESSION_SECURE_COOKIE: 'true'
+            CACHE_STORE: database
+            QUEUE_CONNECTION: database
+            LOG_CHANNEL: stack
+            LOG_LEVEL: warning
+        volumes:
+            - app-storage:/var/www/html/storage/app
+        depends_on:
+            mysql:
+                condition: service_healthy
+
+    mysql:
+        image: 'mysql:8.4'
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: '${DB_DATABASE:-dukaflow}'
+            MYSQL_USER: '${DB_USERNAME:-dukaflow}'
+            MYSQL_PASSWORD: '${DB_PASSWORD}'
+            MYSQL_RANDOM_ROOT_PASSWORD: 'yes'
+        volumes:
+            - mysql-data:/var/lib/mysql
+        healthcheck:
+            test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root']
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+volumes:
+    mysql-data:
+    app-storage:
