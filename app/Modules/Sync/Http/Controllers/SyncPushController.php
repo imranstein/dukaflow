@@ -13,16 +13,11 @@ use Illuminate\Http\JsonResponse;
 
 class SyncPushController extends Controller
 {
+    use ResolvesSyncRep;
+
     public function __invoke(PushSyncRequest $request, RepDirectory $reps, SyncPushHandler $handler): JsonResponse
     {
-        $userId = $request->user()?->id;
-        $salesRepId = $userId === null ? null : $reps->repIdForUser($userId);
-
-        if ($salesRepId === null) {
-            // Not every authenticated user is a rep — an admin poking the
-            // endpoint by hand, say. Nothing to push on their behalf.
-            abort(403, 'Only a sales rep can push field data.');
-        }
+        $salesRepId = $this->resolveRep($request, $reps);
 
         $device = SyncDevice::seenNow(
             deviceId: (string) $request->string('device_id'),
