@@ -13,8 +13,10 @@ use App\Modules\Catalog\Models\UnitOfMeasure;
 use App\Modules\Catalog\Services\PriceResolver;
 use App\Modules\Catalog\Support\CatalogDirectory;
 use App\Modules\Catalog\Support\CatalogProducts;
+use App\Modules\Catalog\Support\CatalogSyncFeed;
 use App\Policies\BackOfficePolicy;
 use App\Support\CompositeScopeDirectory;
+use App\Support\CompositeSyncFeed;
 use App\Support\Contracts\Pricebook;
 use App\Support\Contracts\ProductCatalogue;
 use App\Support\Events\ScopeRecordDeleted;
@@ -49,6 +51,7 @@ class CatalogServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->app->make(CompositeScopeDirectory::class)->register(new CatalogDirectory);
+        $this->app->make(CompositeSyncFeed::class)->register(new CatalogSyncFeed);
 
         $this->loadMigrationsFrom(__DIR__.'/Database/Migrations');
 

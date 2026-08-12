@@ -10,8 +10,10 @@ use App\Modules\Distribution\Models\SalesRep;
 use App\Modules\Distribution\Models\VisitOutcome;
 use App\Modules\Distribution\Models\VisitSchedule;
 use App\Modules\Distribution\Support\DistributionDirectory;
+use App\Modules\Distribution\Support\DistributionSyncFeed;
 use App\Policies\BackOfficePolicy;
 use App\Support\CompositeScopeDirectory;
+use App\Support\CompositeSyncFeed;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -36,6 +38,7 @@ class DistributionServiceProvider extends ServiceProvider
         // Lets other modules name outlets, routes and reps without depending
         // on this one. See App\Support\Contracts\ScopeDirectory.
         $this->app->make(CompositeScopeDirectory::class)->register(new DistributionDirectory);
+        $this->app->make(CompositeSyncFeed::class)->register(new DistributionSyncFeed);
 
         $this->loadMigrationsFrom(__DIR__.'/Database/Migrations');
 

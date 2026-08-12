@@ -28,6 +28,7 @@ use Throwable;
  * @property int|null $sales_rep_id
  * @property int|null $route_id
  * @property int|null $price_list_id
+ * @property bool $has_price_variance
  * @property OrderStatus $status
  * @property string $currency
  * @property int $total_minor
@@ -234,6 +235,7 @@ class Order extends Model
         return [
             'status' => OrderStatus::class,
             'total_minor' => 'integer',
+            'has_price_variance' => 'boolean',
             'placed_at' => 'datetime',
             'submitted_at' => 'datetime',
             'approved_at' => 'datetime',

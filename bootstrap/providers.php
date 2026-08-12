@@ -6,6 +6,7 @@ use App\Modules\Catalog\CatalogServiceProvider;
 use App\Modules\Distribution\DistributionServiceProvider;
 use App\Modules\Inventory\InventoryServiceProvider;
 use App\Modules\Orders\OrdersServiceProvider;
+use App\Modules\Sync\SyncServiceProvider;
 use App\Providers\AppServiceProvider;
 use App\Providers\Filament\AdminPanelProvider;
 
@@ -16,4 +17,5 @@ return [
     DistributionServiceProvider::class,
     OrdersServiceProvider::class,
     InventoryServiceProvider::class,
+    SyncServiceProvider::class,
 ];

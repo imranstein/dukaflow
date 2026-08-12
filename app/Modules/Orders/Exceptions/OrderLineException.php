@@ -41,4 +41,11 @@ final class OrderLineException extends DomainException
             "[{$name}] is priced in {$priced} but the order is in {$order}."
         );
     }
+
+    public static function alreadyCaptured(string $name): self
+    {
+        return new self(
+            "[{$name}] is already a line on this order. A device sending the same product twice is a bug in the device, not a second line."
+        );
+    }
 }

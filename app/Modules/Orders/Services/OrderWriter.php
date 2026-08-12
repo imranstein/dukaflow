@@ -133,6 +133,71 @@ final readonly class OrderWriter
         });
     }
 
+    /**
+     * Adds a line at a price fixed elsewhere — a sale captured offline,
+     * priced against whatever the device's pricebook said when the rep rang
+     * it up. Unlike addLine(), this never re-resolves the price: the rep
+     * already quoted it and the customer already paid it, and repricing a
+     * completed sale to today's number would make the order lie about what
+     * happened. The caller compares this price against a fresh resolution
+     * and flags the order if they disagree — see
+     * Docs/adr/0002-offline-sync-strategy.md §5.
+     *
+     * Also unlike addLine(), a second line for a product already on the
+     * order is refused rather than merged: an offline order arrives as one
+     * whole document, and a capturing device that would send the same
+     * product twice has a bug worth surfacing, not a quantity to add to.
+     */
+    public function addCapturedLine(
+        Order $order,
+        int $productId,
+        int $quantity,
+        Money $price,
+        ?int $priceListId,
+    ): OrderLine {
+        $order->assertLinesAreEditable();
+
+        if ($quantity < 1) {
+            throw OrderLineException::quantityMustBePositive($quantity);
+        }
+
+        $product = $this->products->describe($productId);
+
+        if ($product === null) {
+            throw OrderLineException::unknownProduct($productId);
+        }
+
+        if ($price->currency !== $order->currency) {
+            throw OrderLineException::wrongCurrency($product->name, $price->currency, $order->currency);
+        }
+
+        if ($order->lines()->where('product_id', $productId)->exists()) {
+            throw OrderLineException::alreadyCaptured($product->name);
+        }
+
+        return DB::transaction(function () use ($order, $product, $quantity, $price, $priceListId): OrderLine {
+            $line = $order->lines()->create([
+                'product_id' => $product->id,
+                'product_sku' => $product->sku,
+                'product_name' => $product->name,
+                'unit_code' => $product->unitCode,
+                'quantity' => $quantity,
+                'unit_price_minor' => $price->minorUnits,
+                'line_total_minor' => OrderLine::totalFor($price->minorUnits, $quantity),
+                'price_list_id' => $priceListId,
+            ]);
+
+            if ($order->price_list_id === null && $priceListId !== null) {
+                $order->price_list_id = $priceListId;
+                $order->save();
+            }
+
+            $order->recalculateTotal();
+
+            return $line;
+        });
+    }
+
     public function changeQuantity(Order $order, OrderLine $line, int $quantity): OrderLine
     {
         $this->assertLineBelongsTo($order, $line);

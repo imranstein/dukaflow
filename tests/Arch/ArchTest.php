@@ -19,11 +19,11 @@ arch('application code declares strict types')
 
 arch('catalog does not reach into another module')
     ->expect('App\Modules\Catalog')
-    ->not->toUse(['App\Modules\Distribution', 'App\Modules\Orders', 'App\Modules\Inventory']);
+    ->not->toUse(['App\Modules\Distribution', 'App\Modules\Orders', 'App\Modules\Inventory', 'App\Modules\Sync']);
 
 arch('distribution does not reach into another module')
     ->expect('App\Modules\Distribution')
-    ->not->toUse(['App\Modules\Catalog', 'App\Modules\Orders', 'App\Modules\Inventory']);
+    ->not->toUse(['App\Modules\Catalog', 'App\Modules\Orders', 'App\Modules\Inventory', 'App\Modules\Sync']);
 
 /*
  * Orders is downstream of both Catalog and Distribution and still depends on
@@ -35,11 +35,22 @@ arch('distribution does not reach into another module')
 
 arch('orders does not reach into another module')
     ->expect('App\Modules\Orders')
-    ->not->toUse(['App\Modules\Catalog', 'App\Modules\Distribution', 'App\Modules\Inventory']);
+    ->not->toUse(['App\Modules\Catalog', 'App\Modules\Distribution', 'App\Modules\Inventory', 'App\Modules\Sync']);
 
 arch('inventory does not reach into another module')
     ->expect('App\Modules\Inventory')
-    ->not->toUse(['App\Modules\Catalog', 'App\Modules\Distribution', 'App\Modules\Orders']);
+    ->not->toUse(['App\Modules\Catalog', 'App\Modules\Distribution', 'App\Modules\Orders', 'App\Modules\Sync']);
+
+/*
+ * Sync is the one module allowed to depend on nothing but the shared
+ * kernel — OrderIntake to write, SyncFeed to read. The moment it imports
+ * another module's model directly, the contract it exists to sit behind
+ * has been bypassed. See Docs/adr/0002-offline-sync-strategy.md §7.
+ */
+
+arch('sync does not reach into another module')
+    ->expect('App\Modules\Sync')
+    ->not->toUse(['App\Modules\Catalog', 'App\Modules\Distribution', 'App\Modules\Orders', 'App\Modules\Inventory']);
 
 arch('the shared kernel depends on no module')
     ->expect('App\Support')

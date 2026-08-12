@@ -33,6 +33,7 @@ function tableOwners(): array
         'Distribution' => ['customers', 'routes', 'sales_reps', 'visit_schedules', 'visit_outcomes'],
         'Inventory' => ['warehouses', 'stock_movements', 'stock_reconciliations', 'stock_reconciliation_lines'],
         'Orders' => ['orders', 'order_lines', 'order_payments'],
+        'Sync' => ['sync_devices', 'sync_audit_log', 'sync_conflicts'],
     ];
 }
 
