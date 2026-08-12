@@ -1,0 +1,19 @@
+{
+    "name": "DukaFlow — Rep",
+    "short_name": "DukaFlow",
+    "description": "Capture orders and visit outcomes on the road, offline.",
+    "start_url": "/rep",
+    "scope": "/rep",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#0f172a",
+    "theme_color": "#0f172a",
+    "icons": [
+        {
+            "src": "/rep-icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ]
+}

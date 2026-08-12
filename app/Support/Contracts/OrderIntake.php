@@ -21,6 +21,7 @@ interface OrderIntake
      * @return array{order_id: int, reference: string, has_price_variance: bool}
      */
     public function submit(
+        string $clientId,
         int $customerId,
         ?int $salesRepId,
         ?int $routeId,

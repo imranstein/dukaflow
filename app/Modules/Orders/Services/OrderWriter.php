@@ -37,11 +37,13 @@ final readonly class OrderWriter
         ?int $routeId = null,
         ?Carbon $placedAt = null,
         string $currency = Money::DEFAULT_CURRENCY,
+        ?string $clientId = null,
     ): Order {
         $placedAt ??= Carbon::now();
 
         return Order::query()->create([
             'reference' => $this->nextReference($placedAt),
+            'client_id' => $clientId,
             'customer_id' => $customerId,
             'sales_rep_id' => $salesRepId,
             'route_id' => $routeId,

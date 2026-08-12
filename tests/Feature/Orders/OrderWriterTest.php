@@ -47,6 +47,14 @@ function sellable(string $price = '312.00', array $productState = []): Product
     return $product;
 }
 
+it('carries the id a device gave it, when one was given', function () {
+    $withoutOne = writer()->startDraft(customerId: 1);
+    $withOne = writer()->startDraft(customerId: 1, clientId: '01ARZ3NDEKTSV4RRFFQ69G5FAV');
+
+    expect($withoutOne->client_id)->toBeNull()
+        ->and($withOne->client_id)->toBe('01ARZ3NDEKTSV4RRFFQ69G5FAV');
+});
+
 it('prices a line from the list in force', function () {
     $product = sellable('312.00');
     $order = writer()->startDraft(customerId: 1);

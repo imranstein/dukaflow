@@ -25,4 +25,13 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(CompositeSyncFeed::class);
         $this->app->alias(CompositeSyncFeed::class, SyncFeed::class);
     }
+
+    public function boot(): void
+    {
+        // The rep PWA belongs to no module — it reads across Distribution,
+        // Catalog and Orders the same way app/Filament/Widgets does, and for
+        // the same reason: that cross-module knowledge is exactly what a
+        // module is not allowed to hold.
+        $this->loadRoutesFrom(base_path('routes/rep.php'));
+    }
 }

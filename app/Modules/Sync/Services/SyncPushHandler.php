@@ -56,7 +56,7 @@ final readonly class SyncPushHandler
 
         try {
             $response = match ($entityType) {
-                'order' => $this->submitOrder($salesRepId, $data),
+                'order' => $this->submitOrder($clientId, $salesRepId, $data),
                 'visit_outcome' => $this->submitVisitOutcome($clientId, $salesRepId, $data),
                 default => throw new InvalidArgumentException("Unknown entity type [{$entityType}]."),
             };
@@ -85,7 +85,7 @@ final readonly class SyncPushHandler
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    private function submitOrder(int $salesRepId, array $data): array
+    private function submitOrder(string $clientId, int $salesRepId, array $data): array
     {
         /** @var list<array{product_id: int, quantity: int, unit_price_minor: int, price_list_id: int|null}> $lines */
         $lines = [];
@@ -100,6 +100,7 @@ final readonly class SyncPushHandler
         }
 
         return $this->orders->submit(
+            clientId: $clientId,
             customerId: (int) $data['customer_id'],
             // The rep is who the request authenticated as, never a value
             // the payload claims — one device does not get to place an

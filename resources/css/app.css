@@ -7,3 +7,9 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* Alpine hides x-cloak elements itself once it boots, but the CSS rule is
+   what hides them before that — without it every view flashes once. */
+[x-cloak] {
+    display: none !important;
+}

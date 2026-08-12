@@ -24,6 +24,7 @@ final readonly class OrdersIntake implements OrderIntake
     ) {}
 
     public function submit(
+        string $clientId,
         int $customerId,
         ?int $salesRepId,
         ?int $routeId,
@@ -31,13 +32,14 @@ final readonly class OrdersIntake implements OrderIntake
         string $currency,
         array $lines,
     ): array {
-        return DB::transaction(function () use ($customerId, $salesRepId, $routeId, $placedAt, $currency, $lines): array {
+        return DB::transaction(function () use ($clientId, $customerId, $salesRepId, $routeId, $placedAt, $currency, $lines): array {
             $order = $this->writer->startDraft(
                 customerId: $customerId,
                 salesRepId: $salesRepId,
                 routeId: $routeId,
                 placedAt: $placedAt,
                 currency: $currency,
+                clientId: $clientId,
             );
 
             $hasVariance = false;
