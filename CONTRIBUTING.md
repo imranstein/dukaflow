@@ -39,7 +39,7 @@ Describe what changed and why, not just what. If the change touches a module bou
 
 ## Filament specifics
 
-This project targets Filament 5 and Livewire 4, both newer than a lot of what's indexed for AI assistance and older tutorials. If you're generating a resource, use `artisan make:filament-resource` rather than writing the schema from memory — the API moved (`Filament\Schemas\Schema` for forms, `Filament\Actions\*`, `recordActions()` / `toolbarActions()` on tables) and a plausible-looking older API will compile-fail or silently do nothing.
+This project targets Filament 5 and Livewire 4, both newer than most tutorials and Stack Overflow answers still floating around. Use `artisan make:filament-resource` rather than writing the schema from memory. The API moved (`Filament\Schemas\Schema` for forms, `Filament\Actions\*`, `recordActions()` / `toolbarActions()` on tables) and a plausible-looking older API will compile-fail or silently do nothing.
 
 ## Questions
 

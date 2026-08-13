@@ -30,22 +30,16 @@ docker compose -f docker-compose.prod.yml --env-file .env.production exec app ph
 
 The app is on `${APP_PORT:-8000}` — `http://your-server:8000` by itself, which is not where this should stay. Two things need a real reverse proxy (Caddy, Traefik, nginx on the host) in front before this is reachable from the internet, not just "recommended":
 
-1. **TLS.** This compose file deliberately doesn't take a position on your TLS setup — there are too many reasonable ways to do it to pick one for you.
-2. **`SESSION_SECURE_COOKIE=true` is on by default**, which means the session cookie is marked Secure and the browser drops it over plain HTTP. Concretely: **nobody can log in — to Filament or to `/rep` — until the proxy and TLS are actually in front of this.** It's not a soft recommendation; it's a hard requirement for the app to be usable at all.
+1. **TLS.** This compose file doesn't take a position on your TLS setup. There are too many reasonable ways to do it to pick one for you.
+2. **`SESSION_SECURE_COOKIE=true` is on by default**, which means the session cookie is marked Secure and the browser drops it over plain HTTP. Concretely: nobody can log in, not to Filament, not to `/rep`, until the proxy and TLS are actually in front of this. It's not a soft recommendation. It's a hard requirement for the app to be usable at all.
 
-Once the proxy is up, tell Laravel to trust it by setting `TRUSTED_PROXIES` in `.env.production` to the proxy's address (or `*` if the app container is reachable only through it, never directly) — otherwise every request looks like plain HTTP to Laravel regardless of what the browser used, and generated URLs come out `http://` on an `https://` page.
-
-## What's in here
-
-- `Dockerfile` — three build stages: composer install (deps only, `--no-dev`), the frontend build (the rep PWA's Vite bundle), then a runtime image with nginx and php-fpm in one container serving both. Nothing dev-oriented ships in the image: no Xdebug, no bind-mounted source, opcache on with timestamp validation off (the image is immutable — nothing changes at runtime that opcache would need to notice).
-- `nginx.conf` — a standard Laravel site config, plus one thing specific to this app: `/sw.js` is served with `Cache-Control: no-cache`, because a browser holding onto a stale service worker is a stale offline app for whoever it belongs to.
-- `entrypoint.sh` — `migrate --force`, cache rebuild, then hands off to the real command. Never `migrate:fresh` — this runs against whatever is already in the database.
+Once the proxy is up, tell Laravel to trust it by setting `TRUSTED_PROXIES` in `.env.production` to the proxy's address (or `*` if the app container is reachable only through it, never directly). Otherwise every request looks like plain HTTP to Laravel regardless of what the browser used, and generated URLs come out `http://` on an `https://` page.
 
 ## What's in here
 
-- `Dockerfile` — three build stages: composer install (deps only, `--no-dev`), the frontend build (the rep PWA's Vite bundle), then a runtime image with nginx and php-fpm in one container serving both. Nothing dev-oriented ships in the image: no Xdebug, no bind-mounted source, opcache on with timestamp validation off (the image is immutable — nothing changes at runtime that opcache would need to notice).
-- `nginx.conf` — a standard Laravel site config, plus one thing specific to this app: `/sw.js` is served with `Cache-Control: no-cache`, because a browser holding onto a stale service worker is a stale offline app for whoever it belongs to.
-- `entrypoint.sh` — `migrate --force`, cache rebuild, then hands off to the real command. Never `migrate:fresh` — this runs against whatever is already in the database.
+- `Dockerfile`. Three build stages: composer install (deps only, `--no-dev`), the frontend build (the rep PWA's Vite bundle), then a runtime image with nginx and php-fpm in one container serving both. Nothing dev-oriented ships in the image: no Xdebug, no bind-mounted source, opcache on with timestamp validation off (the image is immutable, nothing changes at runtime that opcache would need to notice).
+- `nginx.conf`. A standard Laravel site config, plus one thing specific to this app: `/sw.js` is served with `Cache-Control: no-cache`, because a browser holding onto a stale service worker is a stale offline app for whoever it belongs to.
+- `entrypoint.sh`. `migrate --force`, cache rebuild, then hands off to the real command. Never `migrate:fresh`; this runs against whatever is already in the database.
 
 ## What this doesn't do
 

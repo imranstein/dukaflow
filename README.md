@@ -6,13 +6,13 @@
 ![Laravel](https://img.shields.io/badge/Laravel-13-ff2d20)
 ![Filament](https://img.shields.io/badge/Filament-5-fdae4b)
 
-Order management for small FMCG distributors, built in Laravel. The interesting part is offline sync: field reps in emerging markets work in places where mobile data drops constantly, so the rep app is a PWA that keeps working without a connection and syncs when one comes back — hand-built, no sync or offline package anywhere in it.
+Order management for small FMCG distributors, built in Laravel. The interesting part is offline sync: field reps in emerging markets work in places where mobile data drops constantly, so the rep app is a PWA that keeps working without a connection and syncs when one comes back. Hand-built, no sync or offline package anywhere in it.
 
-**Live demo:** not yet — deliberately deferred, see [ROADMAP.md](ROADMAP.md). Everything below runs locally in the meantime, and `docker/` has a production-ready setup for anyone who wants to host it themselves sooner.
+**Live demo:** not yet, deliberately deferred, see [ROADMAP.md](ROADMAP.md). Everything below runs locally in the meantime, and `docker/` has a setup ready for anyone who wants to host it themselves sooner.
 
 ## Status
 
-Phases 0 through 3 are done — the back office, the full order-to-stock lifecycle, and the offline rep PWA all work end to end. `v0.4.0-beta` is tagged. Phase 4 (this one: docs, packaging, the live demo) is in progress toward `v1.0.0`. See [ROADMAP.md](ROADMAP.md) for the phase-by-phase breakdown.
+The back office, the full order-to-stock lifecycle, and the offline rep PWA all work end to end. So does the reconciliation layer that keeps a device's cache honest when a route gets reassigned or a record gets deleted, and a back-office queue for reviewing sync conflicts. `v0.4.0-beta` is tagged; `v1.0.0` is code-complete and waiting on the live demo before it gets tagged too. See [ROADMAP.md](ROADMAP.md) for the phase-by-phase breakdown.
 
 ## Quickstart
 
@@ -57,15 +57,15 @@ cp .env.example .env
 ./vendor/bin/sail npm run build
 ```
 
-The app is on http://localhost:8080. A MySQL 8.4 container comes up alongside it; to actually use it rather than SQLite, uncomment the MySQL block in `.env`. This is the dev setup — for a production-style deployment, see [`docker/`](docker/) and [ROADMAP.md](ROADMAP.md).
+The app is on http://localhost:8080. A MySQL 8.4 container comes up alongside it; to actually use it rather than SQLite, uncomment the MySQL block in `.env`. This is the dev setup. For a production-style deployment, see [`docker/`](docker/) and [ROADMAP.md](ROADMAP.md).
 
 ## What it does
 
-- **Back office** (Filament): products, price lists with effective dates and precedence rules, outlets, sales reps, routes, visit schedules — a distributor can be fully set up from the UI alone.
-- **Orders**: a real lifecycle (draft → submitted → approved → fulfilled, or cancelled), each transition guarded rather than silently failing. Lines snapshot the product's price and details at the moment of sale, so a later catalogue edit never rewrites old paperwork. Cash and credit payments, deliberately nothing more — no payment gateways.
-- **Van stock**: an append-only stock ledger — a balance is the sum of every movement, never a column that gets edited. Load stock onto a rep in the morning, sell against it during the day, reconcile the van at night; a reconciliation compares the count against the live ledger and writes the adjustment for whatever doesn't match.
-- **The rep PWA**: today's route, a visit flow, offline order capture, no-sale outcomes with a reason, a sync status indicator, a manual sync button. Built from a hand-written service worker, IndexedDB, and Alpine.js — no server round-trip per interaction, since there's frequently no server to reach.
-- **Offline sync**: idempotent — resubmitting the same order is a no-op that returns the original result, never a duplicate. Genuine conflicts (the same id reused for different content) are flagged for a human, never silently merged. Prices sync pre-resolved per rep rather than shipping the pricing rules to the device to re-run.
+- **Back office** (Filament): products, price lists with effective dates and precedence rules, outlets, sales reps, routes, visit schedules. A distributor can be fully set up from the UI alone.
+- **Orders**: a real lifecycle (draft → submitted → approved → fulfilled, or cancelled), each transition guarded rather than silently failing. Lines snapshot the product's price and details at the moment of sale, so a later catalogue edit never rewrites old paperwork. Cash and credit payments, deliberately nothing more. No payment gateways.
+- **Van stock**: an append-only stock ledger. A balance is the sum of every movement, never a column that gets edited. Load stock onto a rep in the morning, sell against it during the day, reconcile the van at night; a reconciliation compares the count against the live ledger and writes the adjustment for whatever doesn't match.
+- **The rep PWA**: today's route, a visit flow, offline order capture, no-sale outcomes with a reason, a sync status indicator, a manual sync button. Built from a hand-written service worker, IndexedDB, and Alpine.js. No server round-trip per interaction, since there's frequently no server to reach.
+- **Offline sync**: idempotent, resubmitting the same order is a no-op that returns the original result, never a duplicate. Genuine conflicts (the same id reused for different content) are flagged for a human in a back-office review queue, never silently merged. Prices sync pre-resolved per rep rather than shipping the pricing rules to the device to re-run, and a device's cache is reconciled against the server so a reassigned route or a deleted record doesn't linger on a phone forever.
 - **Dashboards**: orders by route and rep, stock position, reconciliation variances.
 
 The full design write-up, including the decisions that didn't make the obvious cut, lives in [Docs/](Docs/) — start with [the architecture overview](Docs/architecture.md) or, if sync is what you're here for, [the sync deep dive](Docs/sync-deep-dive.md).
@@ -82,7 +82,7 @@ Where modules genuinely need each other, they go through an interface in the sha
 
 Money is never a float. Prices are integer minor units inside a `Money` value object, for the reasons in [ADR-004](Docs/adr/0004-money-handling.md).
 
-Stack: Laravel 13, Livewire 4, Filament 5, Tailwind, Alpine. Pest for tests, Larastan at level 6 and Pint for formatting, all three gating CI — Pest runs against SQLite and MySQL both, since the stock ledger's invariants are exactly where the two diverge. [Docs/glossary.md](Docs/glossary.md) has the domain vocabulary if any of the naming is unfamiliar.
+Stack: Laravel 13, Livewire 4, Filament 5, Tailwind, Alpine. Pest for tests, Larastan at level 6 and Pint for formatting, all three gating CI. Pest runs against SQLite and MySQL both, since the stock ledger's invariants are exactly where the two diverge. [Docs/glossary.md](Docs/glossary.md) has the domain vocabulary if any of the naming is unfamiliar.
 
 ## Development
 
