@@ -8,6 +8,10 @@ v1.1: closing the sync gaps ADR-002 §10 named as deliberately out of scope for 
 
 ### Added
 - A back-office conflicts queue (Sync → Conflicts): a Filament resource over `sync_conflicts` showing the rejected payload next to the row it lost to, with a "mark resolved" action. Previously the only place a conflict was visible was the rep PWA's own sync badge. `sync_conflicts` now stores the rejected payload itself, not just its hash.
+- Stale-cache reconciliation (ADR-007): a device now drops a customer, route, visit schedule, or product it had cached once that record is reassigned away from the rep or hard-deleted, instead of holding a stale copy indefinitely. `SyncFeed` gained `idsInScope()`; the pull response carries the authoritative id set on the last page of a cursor walk.
+
+### Considered, not built
+- Line-level order sync (ADR-008): collides with the read-only-once-synced rule and the order state machine's Draft-only line editing. A second offline order already covers the case today.
 
 Phase 4: polish and launch readiness, toward `v1.0.0`.
 
