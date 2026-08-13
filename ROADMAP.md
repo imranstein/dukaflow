@@ -62,5 +62,6 @@ The centrepiece, and the reason the project exists.
 Landing ahead of its own prerequisite tag: `v1.0.0` isn't cut yet (blocked on the live demo, not code), but this is genuinely post-1.0 scope — ADR-002 §10 named these as deliberately out for v1, not missed. Building them now since the demo is what's actually stalled.
 
 - [x] Back-office conflicts queue — a Filament resource over `sync_conflicts`, showing the rejected payload next to the row it lost to
-- [ ] ADR-007: reconciling a route reassigned away from a rep, or a hard-deleted customer, against a device that already cached it — device caches never shrink today
+- [x] ADR-007: full id-set reconciliation — one mechanism for a reassigned route, a hard-deleted customer, *and* a hard-deleted product (a real gap `CatalogSyncFeed`'s own docblock had wrong)
+- [ ] Implement ADR-007
 - [ ] ADR-008: is line-level order sync worth building — collides with the read-only-once-synced rule ADR-002 §3 calls load-bearing; a second order already covers the case for free
