@@ -53,7 +53,11 @@ class AdminPanelProvider extends PanelProvider
                 in: app_path('Modules/Inventory/Filament/Resources'),
                 for: 'App\Modules\Inventory\Filament\Resources',
             )
-            ->navigationGroups(['Trading', 'Catalogue', 'Distribution', 'Inventory'])
+            ->discoverResources(
+                in: app_path('Modules/Sync/Filament/Resources'),
+                for: 'App\Modules\Sync\Filament\Resources',
+            )
+            ->navigationGroups(['Trading', 'Catalogue', 'Distribution', 'Inventory', 'Sync'])
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
                 Dashboard::class,

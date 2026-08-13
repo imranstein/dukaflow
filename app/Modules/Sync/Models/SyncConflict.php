@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
  * @property string $client_id
  * @property string $entity_type
  * @property string $payload_hash
+ * @property array<string, mixed>|null $rejected_payload
  * @property bool $resolved
  * @property Carbon $occurred_at
  * @property Carbon|null $created_at
@@ -37,6 +38,7 @@ class SyncConflict extends Model
         'client_id',
         'entity_type',
         'payload_hash',
+        'rejected_payload',
         'resolved',
         'occurred_at',
     ];
@@ -57,6 +59,7 @@ class SyncConflict extends Model
     protected function casts(): array
     {
         return [
+            'rejected_payload' => 'array',
             'resolved' => 'boolean',
             'occurred_at' => 'datetime',
         ];

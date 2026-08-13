@@ -206,6 +206,30 @@ it('flags a conflict rather than overwriting when an id is reused for different 
         ->and(SyncConflict::query()->where('client_id', $clientId)->count())->toBe(1);
 });
 
+it('stores the rejected content on a conflict, not just its hash', function () {
+    // A conflicts queue where the reviewer can't see what was rejected is
+    // barely a queue — see the back-office resource this backs.
+    [$user, $rep] = repUser();
+    actingAs($user);
+
+    $customer = customerFor($rep);
+    $product = Product::factory()->create();
+    $clientId = (string) Str::ulid();
+
+    postJson('/api/sync/push', pushPayload([
+        orderEntity($customer->id, $product->id, 5000, null, $clientId),
+    ]));
+
+    postJson('/api/sync/push', pushPayload([
+        orderEntity($customer->id, $product->id, 6000, null, $clientId),
+    ]));
+
+    $conflict = SyncConflict::query()->where('client_id', $clientId)->sole();
+
+    expect($conflict->rejected_payload)->not->toBeNull()
+        ->and($conflict->rejected_payload['lines'][0]['unit_price_minor'])->toBe(6000);
+});
+
 it('refuses to replay a client_id back to a different rep than the one who submitted it', function () {
     [$firstUser, $firstRep] = repUser();
     [$secondUser] = repUser();

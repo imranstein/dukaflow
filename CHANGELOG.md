@@ -4,6 +4,11 @@ All notable changes to this project are documented here. Format follows [Keep a 
 
 ## [Unreleased]
 
+v1.1: closing the sync gaps ADR-002 §10 named as deliberately out of scope for v1.
+
+### Added
+- A back-office conflicts queue (Sync → Conflicts): a Filament resource over `sync_conflicts` showing the rejected payload next to the row it lost to, with a "mark resolved" action. Previously the only place a conflict was visible was the rep PWA's own sync badge. `sync_conflicts` now stores the rejected payload itself, not just its hash.
+
 Phase 4: polish and launch readiness, toward `v1.0.0`.
 
 ### Added

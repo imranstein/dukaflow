@@ -71,7 +71,7 @@ Before starting any phase: sketch a short plan for that phase alone and check it
 
 Not "Phase 5" — this is post-1.0 scope by ADR-002's own words, just built before the `v1.0.0` tag exists, since the tag is blocked on the live demo rather than on code. Same discipline as every phase before it: re-read SOURCE_OF_TRUTH §5 and ADR-002 before touching sync code, sketch each piece before writing it, tests in the same change, quality gates green before commit.
 
-- [ ] Back-office conflicts queue: a Filament resource over `sync_conflicts` so a manager can see a conflict happened without phoning the rep. Decide and document whether it stores the rejected payload or only its hash.
+- [x] Back-office conflicts queue: a Filament resource over `sync_conflicts` so a manager can see a conflict happened without phoning the rep. Stores the rejected payload alongside the hash, shown next to the row that won.
 - [ ] ADR-007 — reconciliation: a route reassigned away from a rep, or a hard-deleted customer, currently never leaves a device's cache once pulled. Decide tombstones vs. full id-set reconciliation before writing code; note ADR-006's already-documented gap (bulk query-builder updates skip model observers) as a live constraint on the tombstone option.
 - [ ] ADR-008 — line-level order sync: judge whether it's worth building at all against the read-only-once-synced rule (ADR-002 §3) and the fact that a second order already covers the case today. "Considered, rejected, revisit when X" is an acceptable outcome for this ADR.
 

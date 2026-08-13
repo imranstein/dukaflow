@@ -27,7 +27,7 @@ Every sync exchange is already required to be logged (§5). Rather than building
 That gives the push endpoint one rule, not two:
 
 - Same `client_id`, same payload hash → the row already exists; return the stored response and write nothing new. A network drop after the server saved the order but before the phone saw the response now costs nothing — the retry the phone sends on its own is a no-op that hands back the original result, which is exactly what "resubmitting the same client UUID is a no-op" (§5) means in practice.
-- Same `client_id`, *different* payload hash → the device is asserting a different order under an id it already used once. That can't be a silent overwrite (§5 forbids blind last-write-wins), so it becomes a conflict record instead: nothing is written to the order, the mismatch is logged, and it surfaces wherever the sync status UI shows problems.
+- Same `client_id`, *different* payload hash → the device is asserting a different order under an id it already used once. That can't be a silent overwrite (§5 forbids blind last-write-wins), so it becomes a conflict record instead: nothing is written to the order, the rejected payload and its hash are both logged, and it surfaces two places — the rep PWA's own sync badge, and a back-office queue (`sync_conflicts`, reviewed under Sync → Conflicts) where a manager can see the rejected content next to the row that actually won, not just the fact that they differed.
 
 `client_id` is the ULID from ADR-003; the uniqueness constraint on it is the backstop that makes this true even if the application logic above it has a bug.
 

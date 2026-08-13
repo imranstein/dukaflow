@@ -68,23 +68,27 @@ final readonly class SyncPushHandler
         $existing = SyncAuditLog::forClientId($clientId, $entityType);
 
         if ($existing !== null) {
-            return $this->replay($existing, $device, $salesRepId, $clientId, $entityType, $hash);
+            return $this->replay($existing, $device, $salesRepId, $clientId, $entityType, $data, $hash);
         }
 
         return DB::transaction(fn (): array => $this->submitNew($device, $salesRepId, $clientId, $entityType, $data, $hash));
     }
 
-    /** @return array{client_id: string|null, entity_type: string, status: string, data: array<string, mixed>|null, message: string|null} */
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{client_id: string|null, entity_type: string, status: string, data: array<string, mixed>|null, message: string|null}
+     */
     private function replay(
         SyncAuditLog $existing,
         SyncDevice $device,
         int $salesRepId,
         string $clientId,
         string $entityType,
+        array $data,
         string $hash,
     ): array {
         if (! $existing->matchesHash($hash)) {
-            return $this->recordConflict($device, $clientId, $entityType, $hash);
+            return $this->recordConflict($device, $clientId, $entityType, $data, $hash);
         }
 
         if ($existing->device->sales_rep_id !== $salesRepId) {
@@ -126,7 +130,7 @@ final readonly class SyncPushHandler
             if ($wonByAnother !== null) {
                 return $wonByAnother->matchesHash($hash)
                     ? $this->result($clientId, $entityType, SyncStatus::Ok, $wonByAnother->response_payload, null)
-                    : $this->recordConflict($device, $clientId, $entityType, $hash);
+                    : $this->recordConflict($device, $clientId, $entityType, $data, $hash);
             }
 
             return $this->result($clientId, $entityType, SyncStatus::Error, null, $this->safeMessage($failure));
@@ -217,14 +221,18 @@ final readonly class SyncPushHandler
         }
     }
 
-    /** @return array{client_id: string|null, entity_type: string, status: string, data: array<string, mixed>|null, message: string|null} */
-    private function recordConflict(SyncDevice $device, string $clientId, string $entityType, string $hash): array
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{client_id: string|null, entity_type: string, status: string, data: array<string, mixed>|null, message: string|null}
+     */
+    private function recordConflict(SyncDevice $device, string $clientId, string $entityType, array $data, string $hash): array
     {
         SyncConflict::query()->create([
             'sync_device_id' => $device->id,
             'client_id' => $clientId,
             'entity_type' => $entityType,
             'payload_hash' => $hash,
+            'rejected_payload' => $data,
             'occurred_at' => Carbon::now(),
         ]);
 
