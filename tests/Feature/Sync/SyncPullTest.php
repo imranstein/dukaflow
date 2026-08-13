@@ -66,3 +66,25 @@ it('respects the limit and says when there is more', function () {
     expect($response->json('rows'))->toHaveCount(2)
         ->and($response->json('has_more'))->toBeTrue();
 });
+
+it('only carries valid_ids for reconciliation on the last page of a pull', function () {
+    // Docs/adr/0007-reconciling-stale-device-caches.md: reconciling
+    // against a snapshot mid-pagination would prune ids the device hasn't
+    // even finished catching up on yet.
+    $user = User::factory()->rep()->create();
+    SalesRep::factory()->create(['user_id' => $user->id]);
+    actingAs($user);
+
+    $products = Product::factory()->count(3)->create();
+    $deviceId = (string) Str::ulid();
+
+    $partial = getJson('/api/sync/pull?device_id='.$deviceId.'&entity_type=product&limit=2');
+    expect($partial->json('has_more'))->toBeTrue()
+        ->and($partial->json('valid_ids'))->toBeNull();
+
+    $cursor = $partial->json('next_cursor');
+    $final = getJson('/api/sync/pull?device_id='.$deviceId.'&entity_type=product&limit=2&cursor='.urlencode($cursor));
+
+    expect($final->json('has_more'))->toBeFalse()
+        ->and($final->json('valid_ids'))->toEqualCanonicalizing($products->pluck('id')->all());
+});

@@ -54,6 +54,8 @@ class SyncPullController extends Controller
             ? $cursorToken
             : (new SyncCursor(Carbon::parse($lastRow['updated_at']), $lastRow['id']))->encode();
 
+        $hasMore = count($rows) === $limit;
+
         SyncAuditLog::query()->create([
             'sync_device_id' => $device->id,
             'direction' => SyncDirection::Pull,
@@ -66,7 +68,12 @@ class SyncPullController extends Controller
             'entity_type' => $entityType,
             'rows' => $rows,
             'next_cursor' => $nextCursor,
-            'has_more' => count($rows) === $limit,
+            'has_more' => $hasMore,
+            // Only on the last page of a cursor walk — see
+            // Docs/adr/0007-reconciling-stale-device-caches.md. Reconciling
+            // against a snapshot mid-pagination would prune ids the device
+            // hasn't finished catching up on yet.
+            'valid_ids' => $hasMore ? null : $feed->idsInScope($entityType, $salesRepId),
         ]);
     }
 }

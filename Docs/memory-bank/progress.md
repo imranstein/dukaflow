@@ -142,3 +142,17 @@ Weighed two designs properly rather than picking the one already favored going i
 `SyncFeed` gains `idsInScope($entityType, $salesRepId): array`. The pull response carries the set as `valid_ids`, but only on the last page of a cursor walk (`has_more === false`) — sending it on every page of a multi-page pull would be pure waste. Full design and the reasoning behind rejecting tombstones is in `Docs/adr/0007-reconciling-stale-device-caches.md`.
 
 **Next**: implement ADR-007 — `idsInScope()` on each feed, the controller wiring, and `db.js`'s pruning counterpart to `putCatalogRows`.
+
+## 2026-08-13 — v1.1, item 2 continued: implementing ADR-007
+
+`SyncFeed` gained `idsInScope(entityType, salesRepId): array`, implemented by both feeds off the exact same scoping query `pull()` already filters by — `DistributionSyncFeed` picked up a shared `customerIdsFor()` helper along the way, since `visit_schedule`'s scope is derived from it in both `pull()` and `idsInScope()` now. `SyncPullController` attaches the set as `valid_ids` only on the last page of a cursor walk (`has_more === false`) — mid-pagination would prune ids the device hasn't finished catching up on. `db.js` gained `pruneCatalogRows(entityType, validIds)`, called from `sync.js`'s `pullAll()` right after `valid_ids` shows up in a response.
+
+Verified the whole path live, not just with Pest: logged in as the seeded rep, confirmed the route and its five customers were cached in `dukaflow-rep-1`'s IndexedDB, reassigned the route to a different rep via tinker, hit "Sync now," and watched all of it — route, customers, visit schedules — actually leave IndexedDB and "Today's round" drop to 0 stops. That's the ADR's own acceptance bar, not just "the code looks right."
+
+One real tooling snag along the way, worth the note it got in `activeContext.md`: `/rep/login` kept redirecting to Laravel's bare welcome page instead of showing the login form, which read exactly like a broken route. It wasn't — `RepAuthController` and the Filament admin panel share one `web` guard, and the browser session was still authenticated as admin from the conflicts-queue verification earlier in the day. `POST /rep/logout` first fixed it.
+
+Also fixed while here: two stale docblocks that would have kept describing this as an open gap — `CatalogSyncFeed`'s "a product never actually disappears from the feed" and `DistributionSyncFeed`'s "known gap, accepted for v1" paragraph, both rewritten to point at `idsInScope()` instead.
+
+374 Pest tests (373 passed, 1 pre-existing skip), Larastan level 6, Pint, and a clean `npm run build` all green.
+
+**Next**: ADR-008 — is line-level order sync worth building. Per ADR-002 §10 this is the third candidate, but unlike the other two it's explicitly not a build mandate — a synced order is already read-only per ADR-002 §3, and a second offline order already covers the case a rep actually has today. The ADR's job is to weigh that honestly, not assume the answer is yes.

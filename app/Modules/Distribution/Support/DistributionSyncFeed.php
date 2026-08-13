@@ -16,12 +16,11 @@ use App\Support\SyncCursor;
  * rep's own book, not the whole distributor's. See
  * Docs/adr/0002-offline-sync-strategy.md §4.
  *
- * Known gap, accepted for v1: a route reassigned away from a rep simply
- * stops appearing in that rep's future pulls, rather than arriving once
- * more with an explicit "no longer yours" signal. A device already holding
- * it locally keeps a stale copy until told otherwise by some other means —
- * the same shape of gap ADR-002 §4 already accepts for a hard-deleted
- * customer, and acceptable at the same scale for the same reason.
+ * A route reassigned away from a rep, or a customer hard-deleted, simply
+ * stops appearing in that rep's future pulls rather than arriving once more
+ * with an explicit "no longer yours" signal — idsInScope() below is what
+ * tells a device to drop its stale copy instead. See
+ * Docs/adr/0007-reconciling-stale-device-caches.md.
  */
 final class DistributionSyncFeed implements SyncFeed
 {
@@ -69,9 +68,8 @@ final class DistributionSyncFeed implements SyncFeed
                     'latitude' => $customer->latitude,
                     'longitude' => $customer->longitude,
                     'route_id' => $customer->route_id,
-                    // Deactivation is the deletion a device sees, per ADR-002
-                    // §4; a hard-deleted customer is a rare back-office
-                    // cleanup this feed does not promise to reconcile.
+                    // Deactivation flows down as an ordinary update. A hard
+                    // delete does not — see idsInScope() below.
                     'is_active' => $customer->is_active,
                 ],
             ])
@@ -100,8 +98,7 @@ final class DistributionSyncFeed implements SyncFeed
     /** @return list<array{id: int, updated_at: string, data: array<string, mixed>}> */
     private function visitSchedules(?SyncCursor $cursor, int $limit, int $salesRepId): array
     {
-        $routeIds = $this->routeIdsFor($salesRepId);
-        $customerIds = Customer::query()->whereIn('route_id', $routeIds)->pluck('id');
+        $customerIds = $this->customerIdsFor($salesRepId);
 
         return SyncCursor::apply(VisitSchedule::query()->whereIn('customer_id', $customerIds), $cursor)
             ->limit($limit)
@@ -119,9 +116,37 @@ final class DistributionSyncFeed implements SyncFeed
             ->all();
     }
 
+    /**
+     * The complete current id set for one entity type and rep — see
+     * Docs/adr/0007-reconciling-stale-device-caches.md. Not a delta: the
+     * same scoping query pull() itself filters by, so a route reassigned
+     * away from this rep or a hard-deleted customer simply isn't in it.
+     *
+     * @return list<int>
+     */
+    public function idsInScope(string $entityType, ?int $salesRepId): array
+    {
+        if ($salesRepId === null) {
+            return [];
+        }
+
+        return match ($entityType) {
+            'customer' => $this->customerIdsFor($salesRepId),
+            'route' => $this->routeIdsFor($salesRepId),
+            'visit_schedule' => VisitSchedule::query()->whereIn('customer_id', $this->customerIdsFor($salesRepId))->pluck('id')->all(),
+            default => [],
+        };
+    }
+
     /** @return list<int> */
     private function routeIdsFor(int $salesRepId): array
     {
         return Route::query()->where('sales_rep_id', $salesRepId)->pluck('id')->all();
+    }
+
+    /** @return list<int> */
+    private function customerIdsFor(int $salesRepId): array
+    {
+        return Customer::query()->whereIn('route_id', $this->routeIdsFor($salesRepId))->pluck('id')->all();
     }
 }

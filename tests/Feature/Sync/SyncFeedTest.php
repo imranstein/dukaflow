@@ -85,6 +85,70 @@ it('fails closed rather than open when no rep is known', function () {
         ->and($feed->pull('visit_schedule', null, 50, null))->toBe([]);
 });
 
+it('drops a route from idsInScope the moment it is reassigned to someone else', function () {
+    // Docs/adr/0007-reconciling-stale-device-caches.md's own test shape:
+    // not just that a fresh pull doesn't re-offer it, but that the
+    // reconciliation set actively says it's gone.
+    $me = SalesRep::factory()->create();
+    $them = SalesRep::factory()->create();
+    $route = Route::factory()->create(['sales_rep_id' => $me->id]);
+    $customer = Customer::factory()->create(['route_id' => $route->id]);
+    VisitSchedule::factory()->create(['customer_id' => $customer->id]);
+
+    $feed = new DistributionSyncFeed;
+
+    expect($feed->idsInScope('route', $me->id))->toBe([$route->id])
+        ->and($feed->idsInScope('customer', $me->id))->toBe([$customer->id]);
+
+    $route->update(['sales_rep_id' => $them->id]);
+
+    expect($feed->idsInScope('route', $me->id))->toBe([])
+        ->and($feed->idsInScope('customer', $me->id))->toBe([])
+        ->and($feed->idsInScope('visit_schedule', $me->id))->toBe([]);
+});
+
+it('drops a hard-deleted customer, and its cascaded visit schedule, from idsInScope', function () {
+    $rep = SalesRep::factory()->create();
+    $route = Route::factory()->create(['sales_rep_id' => $rep->id]);
+    $customer = Customer::factory()->create(['route_id' => $route->id]);
+    VisitSchedule::factory()->create(['customer_id' => $customer->id]);
+
+    $feed = new DistributionSyncFeed;
+    expect($feed->idsInScope('customer', $rep->id))->toBe([$customer->id]);
+
+    $customer->delete();
+
+    expect($feed->idsInScope('customer', $rep->id))->toBe([])
+        ->and($feed->idsInScope('visit_schedule', $rep->id))->toBe([]);
+});
+
+it('fails closed on idsInScope too when no rep is known', function () {
+    $rep = SalesRep::factory()->create();
+    Route::factory()->create(['sales_rep_id' => $rep->id]);
+
+    $feed = new DistributionSyncFeed;
+
+    expect($feed->idsInScope('customer', null))->toBe([])
+        ->and($feed->idsInScope('route', null))->toBe([])
+        ->and($feed->idsInScope('visit_schedule', null))->toBe([]);
+});
+
+it('drops a hard-deleted product from idsInScope, unlike deactivation which just updates', function () {
+    // CatalogSyncFeed's own docblock used to claim a product never
+    // disappears from the feed — true only for deactivation, not the real
+    // delete action the Products resource offers. See ADR-007's context.
+    $product = Product::factory()->create();
+    $other = Product::factory()->create();
+
+    $feed = new CatalogSyncFeed;
+    expect($feed->idsInScope('product', null))->toContain($product->id, $other->id);
+
+    $product->delete();
+
+    expect($feed->idsInScope('product', null))->toBe([$other->id])
+        ->and($feed->idsInScope('nonsense', null))->toBe([]);
+});
+
 it('routes the composite to whichever module registered the entity type', function () {
     $composite = new CompositeSyncFeed;
     $composite->register(new CatalogSyncFeed);

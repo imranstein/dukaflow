@@ -44,6 +44,12 @@ final class CompositeSyncFeed implements SyncFeed
         return $this->feedFor($entityType)?->pull($entityType, $cursor, $limit, $salesRepId) ?? [];
     }
 
+    /** @return list<int> */
+    public function idsInScope(string $entityType, ?int $salesRepId): array
+    {
+        return $this->feedFor($entityType)?->idsInScope($entityType, $salesRepId) ?? [];
+    }
+
     private function feedFor(string $entityType): ?SyncFeed
     {
         foreach ($this->feeds as $feed) {

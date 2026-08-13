@@ -63,6 +63,12 @@ async function pullAll(onProgress) {
             await db.putCatalogRows(entityType, page.rows);
             await db.setMeta(`cursor:${entityType}`, page.next_cursor);
 
+            // Only present on the last page — see
+            // Docs/adr/0007-reconciling-stale-device-caches.md.
+            if (page.valid_ids) {
+                await db.pruneCatalogRows(entityType, page.valid_ids);
+            }
+
             cursor = page.next_cursor;
             hasMore = page.has_more;
             onProgress?.(entityType, page.rows.length);

@@ -73,7 +73,7 @@ Not "Phase 5" — this is post-1.0 scope by ADR-002's own words, just built befo
 
 - [x] Back-office conflicts queue: a Filament resource over `sync_conflicts` so a manager can see a conflict happened without phoning the rep. Stores the rejected payload alongside the hash, shown next to the row that won.
 - [x] ADR-007 — reconciliation: decided full id-set reconciliation over tombstones — it unifies reassignment and hard-delete under one mechanism instead of two, and doesn't depend on a model event having fired. Scope grew to include `product` too: `CatalogSyncFeed`'s docblock claimed a product never disappears from the feed, which turned out to be true only for deactivation, not the real `DeleteAction` the Products resource already offers.
-- [ ] Implement ADR-007: `SyncFeed::idsInScope()`, the pull response's `valid_ids` field, and client-side pruning in `db.js`.
+- [x] Implement ADR-007: `SyncFeed::idsInScope()`, the pull response's `valid_ids` field, and client-side pruning in `db.js`. Verified live: reassigned a route away from a rep, hit "Sync now," watched the customer/route/visit-schedule rows actually disappear from IndexedDB and "Today's round" go to 0 stops.
 - [ ] ADR-008 — line-level order sync: judge whether it's worth building at all against the read-only-once-synced rule (ADR-002 §3) and the fact that a second order already covers the case today. "Considered, rejected, revisit when X" is an acceptable outcome for this ADR.
 
 **Acceptance**: each item ships with its own tests and, where it changes a documented contract (ADR-002, the sync deep dive, `DistributionSyncFeed`'s docblock), the docs are updated in the same change — not left to drift the way the review found them drifting before.

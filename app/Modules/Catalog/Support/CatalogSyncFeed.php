@@ -47,11 +47,28 @@ final class CatalogSyncFeed implements SyncFeed
                     'pack_size' => $product->pack_size,
                     'category' => $product->category,
                     'barcode' => $product->barcode,
-                    // Deactivation is the deletion a device sees, per ADR-002
-                    // §4 — a product never actually disappears from the feed.
+                    // Deactivation flows down as an ordinary update. A hard
+                    // delete does not — see idsInScope() below.
                     'is_active' => $product->is_active,
                 ],
             ])
             ->all();
+    }
+
+    /**
+     * Products has no SoftDeletes, and the Filament resource offers a real
+     * delete action, so a product can vanish from pull() entirely rather
+     * than just deactivating. See
+     * Docs/adr/0007-reconciling-stale-device-caches.md.
+     *
+     * @return list<int>
+     */
+    public function idsInScope(string $entityType, ?int $salesRepId): array
+    {
+        if ($entityType !== 'product') {
+            return [];
+        }
+
+        return Product::query()->pluck('id')->all();
     }
 }

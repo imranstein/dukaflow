@@ -33,4 +33,15 @@ interface SyncFeed
      * @return list<array{id: int, updated_at: string, data: array<string, mixed>}>
      */
     public function pull(string $entityType, ?SyncCursor $cursor, int $limit, ?int $salesRepId): array;
+
+    /**
+     * Every id currently valid for this entity type and scope — what a
+     * device reconciles its cache against so a reassigned or hard-deleted
+     * row doesn't linger forever. Not a delta: recomputed from the same
+     * query pull() itself filters by. See
+     * Docs/adr/0007-reconciling-stale-device-caches.md.
+     *
+     * @return list<int>
+     */
+    public function idsInScope(string $entityType, ?int $salesRepId): array;
 }

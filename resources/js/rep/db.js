@@ -93,6 +93,28 @@ export const db = {
         );
     },
 
+    // Drops anything cached for this entity type that isn't in the
+    // server's authoritative id set — a route reassigned away from this
+    // rep, or a hard delete, both just stop being in it. See
+    // Docs/adr/0007-reconciling-stale-device-caches.md. Only called with
+    // the last page of a pull, once validIds is actually complete.
+    async pruneCatalogRows(entityType, validIds) {
+        const transaction = await tx('catalog', 'readwrite');
+        const store = transaction.objectStore('catalog');
+        const valid = new Set(validIds);
+        const request = store.getAll();
+
+        request.onsuccess = () => {
+            for (const row of request.result) {
+                if (row.entityType === entityType && !valid.has(row.id)) {
+                    store.delete(row.key);
+                }
+            }
+        };
+
+        return settle(transaction);
+    },
+
     async replacePricebook(prices) {
         const transaction = await tx('pricebook', 'readwrite');
         const store = transaction.objectStore('pricebook');
