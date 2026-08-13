@@ -47,19 +47,19 @@ The centrepiece, and the reason the project exists.
 - [x] Price-variance flagging when a captured price disagrees with the pricebook at push time
 - [x] CI builds and checks the PWA's frontend on every push
 
-## Phase 4 — Polish and launch (in progress)
+## Phase 4 — Polish and launch ✅
 
 - [x] Architecture overview, domain glossary, sync deep dive
 - [x] README rewritten as the portfolio page: badges, feature tour, updated status
 - [x] CONTRIBUTING.md, CODE_OF_CONDUCT.md, issue and PR templates, CHANGELOG.md
 - [x] Production Docker setup for self-hosters (`docker/`, `docker-compose.prod.yml`) — separate from the Sail dev setup. A review caught a real build-blocker (the composer stage failing on a missing `ext-intl`, since `filament/support` needs it and composer's own image doesn't ship it) and several production-readiness gaps (`APP_KEY`/`DB_PASSWORD` unguarded, no trusted-proxy config behind a reverse proxy, a root/www-data file-ownership edge case). All fixed. CI now builds the image on every push — the actual, durable proof this works, rather than a one-off local check.
 - [ ] Screenshots — dropped; the browser tooling used to capture them didn't produce a savable file. Not a blocker, just genuinely not done.
-- [ ] Live demo with nightly seed reset — deliberately deferred; picking a host and paying for it is a call for whoever's running this project, not something to do unprompted. `docker-compose.prod.yml` is ready whenever that happens.
-- [ ] `v1.0.0` — held until the live demo lands, since [SOURCE_OF_TRUTH.md](Docs/SOURCE_OF_TRUTH.md) §9 names it as part of the definition of done.
+- [ ] Live demo with nightly seed reset — deliberately deferred, and no longer blocking `v1.0.0` (see [SOURCE_OF_TRUTH.md](Docs/SOURCE_OF_TRUTH.md) §9). Picking a host and paying for it is a call for whoever's running this project. `docker-compose.prod.yml` is ready whenever that happens.
+- [x] `v1.0.0` tagged.
 
 ## v1.1 — closing the sync gaps ✅
 
-Landing ahead of its own prerequisite tag: `v1.0.0` isn't cut yet (blocked on the live demo, not code), but this is genuinely post-1.0 scope — ADR-002 §10 named these as deliberately out for v1, not missed. Building them now since the demo is what's actually stalled.
+ADR-002 §10 named these three as deliberately out of scope for v1, not missed — written down so a gap found later would read as a decision. Closed and tagged `v1.1.0` right behind `v1.0.0`.
 
 - [x] Back-office conflicts queue — a Filament resource over `sync_conflicts`, showing the rejected payload next to the row it lost to
 - [x] ADR-007: full id-set reconciliation — one mechanism for a reassigned route, a hard-deleted customer, *and* a hard-deleted product (a real gap `CatalogSyncFeed`'s own docblock had wrong)

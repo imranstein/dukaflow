@@ -4,7 +4,11 @@ All notable changes to this project are documented here. Format follows [Keep a 
 
 ## [Unreleased]
 
-v1.1: closing the sync gaps ADR-002 §10 named as deliberately out of scope for v1.
+Nothing yet.
+
+## [v1.1.0] — 2026-08-13
+
+Closing the sync gaps ADR-002 §10 named as deliberately out of scope for v1.
 
 ### Added
 - A back-office conflicts queue (Sync → Conflicts): a Filament resource over `sync_conflicts` showing the rejected payload next to the row it lost to, with a "mark resolved" action. Previously the only place a conflict was visible was the rep PWA's own sync badge. `sync_conflicts` now stores the rejected payload itself, not just its hash.
@@ -13,7 +17,9 @@ v1.1: closing the sync gaps ADR-002 §10 named as deliberately out of scope for 
 ### Considered, not built
 - Line-level order sync (ADR-008): collides with the read-only-once-synced rule and the order state machine's Draft-only line editing. A second offline order already covers the case today.
 
-Phase 4: polish and launch readiness, toward `v1.0.0`.
+## [v1.0.0] — 2026-08-13
+
+Phase 4: polish and launch readiness.
 
 ### Added
 - Architecture overview, domain glossary, and a sync deep dive under `Docs/`.
@@ -24,6 +30,9 @@ Phase 4: polish and launch readiness, toward `v1.0.0`.
 
 ### Fixed
 - A review of the new Docker setup caught a real build blocker (the composer stage failing on a missing `ext-intl`) and several production-readiness gaps — unguarded `APP_KEY`/`DB_PASSWORD`, no trusted-proxy config, a root/www-data file-ownership edge case in the entrypoint. All closed.
+
+### Changed
+- The live demo dropped from this release's definition of done (`Docs/SOURCE_OF_TRUTH.md` §9). It's a hosting decision, not a code readiness one, and everything else was already true. `docker-compose.prod.yml` is ready whenever a demo goes up.
 
 ## [v0.4.0-beta] — 2026-08-12
 
@@ -83,7 +92,9 @@ Phase 0: foundation.
 - A walking skeleton: a `Product` model in Catalog with its own migration, factory, Filament resource, and one Pest feature test, proving the module conventions end to end.
 - AGPL-3.0 license, initial README, roadmap.
 
-[Unreleased]: https://github.com/imranstein/dukaflow/compare/v0.4.0-beta...HEAD
+[Unreleased]: https://github.com/imranstein/dukaflow/compare/v1.1.0...HEAD
+[v1.1.0]: https://github.com/imranstein/dukaflow/compare/v1.0.0...v1.1.0
+[v1.0.0]: https://github.com/imranstein/dukaflow/compare/v0.4.0-beta...v1.0.0
 [v0.4.0-beta]: https://github.com/imranstein/dukaflow/compare/v0.3.0-beta...v0.4.0-beta
 [v0.3.0-beta]: https://github.com/imranstein/dukaflow/compare/v0.2.0-alpha...v0.3.0-beta
 [v0.2.0-alpha]: https://github.com/imranstein/dukaflow/compare/v0.1.0-alpha...v0.2.0-alpha

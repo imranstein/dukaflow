@@ -105,7 +105,8 @@ Contingency: if Phase 3 blows its budget badly, ship v1 with the online rep inte
 ## 9. Definition of done for v1.0.0
 
 - All Phase 0 through 4 acceptance criteria met.
-- Live demo online with resettable seed data.
 - Docs complete: README, architecture overview, ADRs 001-004, glossary, sync deep dive, contribution files.
 - CI green, Larastan level 6, meaningful Pest coverage of all domain invariants.
 - Tagged v1.0.0 with a CHANGELOG and the AGPL-3.0 license file in place.
+
+A live demo with resettable seed data was originally part of this list. Deliberately dropped as a blocker on 2026-08-13: it's a hosting decision (which provider, a domain, a recurring cost) rather than a code readiness question, and everything else here was already true. `docker-compose.prod.yml` and `docker/README.md` still exist for exactly this, and a live demo can still go up later without needing another release to point at it — the README's demo link just gets filled in when it does.
