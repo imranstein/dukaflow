@@ -56,3 +56,11 @@ The centrepiece, and the reason the project exists.
 - [ ] Screenshots — dropped; the browser tooling used to capture them didn't produce a savable file. Not a blocker, just genuinely not done.
 - [ ] Live demo with nightly seed reset — deliberately deferred; picking a host and paying for it is a call for whoever's running this project, not something to do unprompted. `docker-compose.prod.yml` is ready whenever that happens.
 - [ ] `v1.0.0` — held until the live demo lands, since [SOURCE_OF_TRUTH.md](Docs/SOURCE_OF_TRUTH.md) §9 names it as part of the definition of done.
+
+## v1.1 — closing the sync gaps (in progress)
+
+Landing ahead of its own prerequisite tag: `v1.0.0` isn't cut yet (blocked on the live demo, not code), but this is genuinely post-1.0 scope — ADR-002 §10 named these as deliberately out for v1, not missed. Building them now since the demo is what's actually stalled.
+
+- [ ] Back-office conflicts queue — a Filament resource over `sync_conflicts`; today only the rep PWA's own badge shows a conflict happened, nobody in the office can see it
+- [ ] ADR-007: reconciling a route reassigned away from a rep, or a hard-deleted customer, against a device that already cached it — device caches never shrink today
+- [ ] ADR-008: is line-level order sync worth building — collides with the read-only-once-synced rule ADR-002 §3 calls load-bearing; a second order already covers the case for free
